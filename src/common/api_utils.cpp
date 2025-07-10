@@ -39,7 +39,7 @@ unique_ptr<HTTPResponse> APIUtils::DeleteRequest(ClientContext &context, const I
 	auto &db = DatabaseInstance::GetDatabase(context);
 
 	HTTPHeaders headers(db);
-	headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
+	// headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
 	headers.Insert("Authorization", StringUtil::Format("Bearer %s", token));
 
 	string request_url = AddHttpHostIfMissing(endpoint_builder.GetURL());
@@ -59,7 +59,7 @@ unique_ptr<HTTPResponse> APIUtils::PostRequest(ClientContext &context, const str
 	string request_url = AddHttpHostIfMissing(url);
 
 	HTTPHeaders headers(db);
-	headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
+	// headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
 	headers.Insert("Content-Type", StringUtil::Format("application/%s", content_type));
 	for (auto it : additional_headers) {
 		headers.Insert(it.first, it.second);
@@ -84,7 +84,7 @@ unique_ptr<HTTPResponse> APIUtils::GetRequest(ClientContext &context, const IRCE
 	auto &db = DatabaseInstance::GetDatabase(context);
 
 	HTTPHeaders headers(db);
-	headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
+	// headers.Insert("X-Iceberg-Access-Delegation", "vended-credentials");
 	if (!token.empty()) {
 		headers.Insert("Authorization", StringUtil::Format("Bearer %s", token));
 	}

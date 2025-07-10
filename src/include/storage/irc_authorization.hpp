@@ -15,6 +15,7 @@ struct IcebergAttachOptions {
 	string endpoint;
 	string warehouse;
 	string secret;
+	string prefix;
 	string name;
 	// some catalogs do not yet support stage create
 	bool supports_stage_create = true;
