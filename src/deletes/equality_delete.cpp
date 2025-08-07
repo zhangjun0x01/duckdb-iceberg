@@ -61,9 +61,18 @@ void IcebergMultiFileList::ScanEqualityDeleteFile(const IcebergManifestEntry &en
 		id_to_global_column[col.identifier.GetValue<int32_t>()] = i;
 	}
 
+	std::vector<ColumnIndex> temp = column_indexes;
+	for (auto field_id : entry.equality_ids) {
+		auto global_column_id = id_to_global_column[field_id];
+		ColumnIndex equality_index(global_column_id);
+		if (std::find(column_indexes.begin(), column_indexes.end(), equality_index) == column_indexes.end()) {
+			temp.push_back(equality_index);
+		}
+	}
+
 	unordered_map<idx_t, idx_t> global_id_to_result_id;
-	for (idx_t i = 0; i < column_indexes.size(); i++) {
-		auto &column_index = column_indexes[i];
+	for (idx_t i = 0; i < temp.size(); i++) {
+		auto &column_index = temp[i];
 		if (column_index.IsVirtualColumn()) {
 			continue;
 		}
