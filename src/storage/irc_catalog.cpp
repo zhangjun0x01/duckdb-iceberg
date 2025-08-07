@@ -27,8 +27,8 @@ namespace duckdb {
 IRCatalog::IRCatalog(AttachedDatabase &db_p, AccessMode access_mode, unique_ptr<IRCAuthorization> auth_handler,
                      IcebergAttachOptions &attach_options, const string &version)
     : Catalog(db_p), access_mode(access_mode), auth_handler(std::move(auth_handler)),
-      warehouse(attach_options.warehouse), uri(attach_options.endpoint), version(version), prefix((attach_options.prefix)),
-      attach_options(attach_options) {
+      warehouse(attach_options.warehouse), uri(attach_options.endpoint), version(version),
+      prefix((attach_options.prefix)), attach_options(attach_options) {
 	if (version.empty()) {
 		throw InternalException("version can not be empty");
 	}
