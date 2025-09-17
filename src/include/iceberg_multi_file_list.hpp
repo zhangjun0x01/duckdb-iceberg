@@ -55,6 +55,8 @@ public:
 	void ProcessDeletes(const vector<MultiFileColumnDefinition> &global_columns,
 	                    const vector<ColumnIndex> &column_indexes) const;
 	void GetStatistics(vector<PartitionStatistics> &result) const;
+	vector<reference<const IcebergEqualityDeleteRow>>
+	GetEqualityDeletesForFile(const IcebergManifestEntry &data_file) const;
 
 public:
 	//! MultiFileList API
