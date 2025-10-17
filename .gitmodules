@@ -4,4 +4,5 @@
 	branch = main
 [submodule "extension-ci-tools"]
 	path = extension-ci-tools
-	url = https://github.com/duckdb/extension-ci-tools.git
+	url = https://github.com/zhangjun0x01/extension-ci-tools.git
+	branch = test

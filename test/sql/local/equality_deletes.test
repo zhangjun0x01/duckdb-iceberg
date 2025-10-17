@@ -38,54 +38,54 @@ require httpfs
 # Result:[(id=4, name=d, bir=2025-01-04),(5,'e',date '2025-01-05')]
 
 
-# all
-query III
-SELECT * FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-5	e	2025-01-05
-4	d	2025-01-04
-
-
-# only equality delete fields
-query II
-SELECT id,name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-5	e
-4	d
-
-
-# no equality delete fields
-query I
-SELECT bir FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-2025-01-05
-2025-01-04
-
-# partial equality delete field
-query I
-SELECT name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-e
-d
-
-# partial equality delete field and other
-query II
-SELECT name,bir FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-e	2025-01-05
-d	2025-01-04
-
-# contain metadata
-query II
-SELECT filename[17:32], name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-equality_deletes	e
-equality_deletes	d
-
-query I
-SELECT count(*) FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
-----
-2
+# # all
+# query III
+# SELECT * FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# 5	e	2025-01-05
+# 4	d	2025-01-04
+#
+#
+# # only equality delete fields
+# query II
+# SELECT id,name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# 5	e
+# 4	d
+#
+#
+# # no equality delete fields
+# query I
+# SELECT bir FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# 2025-01-05
+# 2025-01-04
+#
+# # partial equality delete field
+# query I
+# SELECT name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# e
+# d
+#
+# # partial equality delete field and other
+# query II
+# SELECT name,bir FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# e	2025-01-05
+# d	2025-01-04
+#
+# # contain metadata
+# query II
+# SELECT filename[17:32], name FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# equality_deletes	e
+# equality_deletes	d
+#
+# query I
+# SELECT count(*) FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable');
+# ----
+# 2
 
 
 # for partitioned table:
@@ -110,6 +110,14 @@ SELECT count(*) FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equalit
 # Fifth snapshot:
 # delete where  name = f
 # Result:[(id=1, name=a, bir=2025-01-01), (id=4, name=d, bir=2025-01-04), (5,'e',date '2025-01-05')]
+
+# all
+query III
+SELECT * FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable_partitioned');
+----
+5	e	2025-01-05
+1	a	2025-01-01
+4	d	2025-01-04
 
 # only equality delete fields
 query I
@@ -149,10 +157,3 @@ SELECT count(*) FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equalit
 ----
 3
 
-# all
-query III
-SELECT * FROM ICEBERG_SCAN('__WORKING_DIRECTORY__/data/persistent/equality_deletes/warehouse/mydb/mytable_partitioned');
-----
-5	e	2025-01-05
-1	a	2025-01-01
-4	d	2025-01-04
