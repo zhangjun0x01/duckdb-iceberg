@@ -461,14 +461,11 @@ unique_ptr<Catalog> IRCatalog::Attach(optional_ptr<StorageExtensionInfo> storage
 		} else if (lower_name == "purge_requested") {
 			attach_options.purge_requested = entry.second.DefaultCastAs(LogicalType::BOOLEAN).GetValue<bool>();
 			set_by_attach_options.insert("purge_requested");
-<<<<<<< HEAD
 		} else if (lower_name == "default_schema") {
 			default_schema = entry.second.ToString();
-=======
 		} else if (lower_name == "prefix") {
 			attach_options.prefix = StringUtil::Lower(entry.second.ToString());
 			StringUtil::RTrim(attach_options.prefix);
->>>>>>> 54066e74 (add prefix for rest catalog)
 		} else {
 			attach_options.options.emplace(std::move(entry));
 		}
