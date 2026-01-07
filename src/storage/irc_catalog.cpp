@@ -28,7 +28,7 @@ IRCatalog::IRCatalog(AttachedDatabase &db_p, AccessMode access_mode, unique_ptr<
                      IcebergAttachOptions &attach_options, const string &default_schema)
     : Catalog(db_p), access_mode(access_mode), auth_handler(std::move(auth_handler)),
       warehouse(attach_options.warehouse), uri(attach_options.endpoint), version("v1"), attach_options(attach_options),
-      default_schema(default_schema) {
+      prefix(attach_options.prefix), default_schema(default_schema) {
 	D_ASSERT(!default_schema.empty());
 }
 
@@ -110,8 +110,7 @@ optional_ptr<CatalogEntry> IRCatalog::CreateSchema(CatalogTransaction transactio
 }
 
 void IRCatalog::DropSchema(ClientContext &context, DropInfo &info) {
-	throw NotImplementedException(
-		    "DROP SCHEMA not supported for Iceberg currently");
+	throw NotImplementedException("DROP SCHEMA not supported for Iceberg currently");
 
 	if (info.cascade) {
 		throw NotImplementedException(
@@ -223,7 +222,7 @@ void IRCatalog::AddDefaultSupportedEndpoints() {
 	// Load metadata for a Namespace
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}");
 	// Drop a namespace
-//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
+	//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
 	// set or remove properties on a namespace
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/properties");
 	// list all table identifiers
@@ -235,7 +234,7 @@ void IRCatalog::AddDefaultSupportedEndpoints() {
 	// commit updates to a tbale
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// drop table from a catalog
-//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
+	//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// Register a table using given metadata file location.
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/register");
 	// send metrics report to this endpoint to be processed by the backend
@@ -255,7 +254,7 @@ void IRCatalog::AddS3TablesEndpoints() {
 	// Load metadata for a Namespace
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}");
 	// Drop a namespace
-//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
+	//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
 	// list all table identifiers
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}/tables");
 	// create table in the namespace
@@ -265,7 +264,7 @@ void IRCatalog::AddS3TablesEndpoints() {
 	// commit updates to a table
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// drop table from a catalog
-//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
+	//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// table exists
 	supported_urls.insert("HEAD /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// Rename a table from one identifier to another.
@@ -277,7 +276,7 @@ void IRCatalog::AddS3TablesEndpoints() {
 void IRCatalog::GetConfig(ClientContext &context, IcebergEndpointType &endpoint_type) {
 	// set the prefix to be empty. To get the config endpoint,
 	// we cannot add a default prefix.
-	D_ASSERT(prefix.empty());
+	// D_ASSERT(prefix.empty());
 	auto catalog_config = IRCAPI::GetCatalogConfig(context, *this);
 
 	overrides = catalog_config.overrides;
@@ -469,6 +468,9 @@ unique_ptr<Catalog> IRCatalog::Attach(optional_ptr<StorageExtensionInfo> storage
 			set_by_attach_options.insert("purge_requested");
 		} else if (lower_name == "default_schema") {
 			default_schema = entry.second.ToString();
+		} else if (lower_name == "prefix") {
+			attach_options.prefix = StringUtil::Lower(entry.second.ToString());
+			StringUtil::RTrim(attach_options.prefix);
 		} else {
 			attach_options.options.emplace(std::move(entry));
 		}
