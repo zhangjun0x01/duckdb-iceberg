@@ -67,6 +67,7 @@ optional_ptr<CatalogEntry> IRCSchemaEntry::CreateTable(CatalogTransaction transa
 }
 
 void IRCSchemaEntry::DropEntry(ClientContext &context, DropInfo &info) {
+	throw NotImplementedException("DROP TABLE is not supported for Iceberg tables currently");
 	auto &transaction = IRCTransaction::Get(context, catalog);
 	auto table_name = info.name;
 	// find if info has a table name, if so look for it in

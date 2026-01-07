@@ -110,6 +110,9 @@ optional_ptr<CatalogEntry> IRCatalog::CreateSchema(CatalogTransaction transactio
 }
 
 void IRCatalog::DropSchema(ClientContext &context, DropInfo &info) {
+	throw NotImplementedException(
+		    "DROP SCHEMA not supported for Iceberg currently");
+
 	if (info.cascade) {
 		throw NotImplementedException(
 		    "DROP SCHEMA <schema_name> CASCADE is not supported for Iceberg schemas currently");
@@ -220,7 +223,7 @@ void IRCatalog::AddDefaultSupportedEndpoints() {
 	// Load metadata for a Namespace
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}");
 	// Drop a namespace
-	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
+//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
 	// set or remove properties on a namespace
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/properties");
 	// list all table identifiers
@@ -232,7 +235,7 @@ void IRCatalog::AddDefaultSupportedEndpoints() {
 	// commit updates to a tbale
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// drop table from a catalog
-	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
+//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// Register a table using given metadata file location.
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/register");
 	// send metrics report to this endpoint to be processed by the backend
@@ -252,7 +255,7 @@ void IRCatalog::AddS3TablesEndpoints() {
 	// Load metadata for a Namespace
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}");
 	// Drop a namespace
-	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
+//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}");
 	// list all table identifiers
 	supported_urls.insert("GET /v1/{prefix}/namespaces/{namespace}/tables");
 	// create table in the namespace
@@ -262,7 +265,7 @@ void IRCatalog::AddS3TablesEndpoints() {
 	// commit updates to a table
 	supported_urls.insert("POST /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// drop table from a catalog
-	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
+//	supported_urls.insert("DELETE /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// table exists
 	supported_urls.insert("HEAD /v1/{prefix}/namespaces/{namespace}/tables/{table}");
 	// Rename a table from one identifier to another.
