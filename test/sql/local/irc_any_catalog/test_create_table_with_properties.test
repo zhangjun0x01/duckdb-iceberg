@@ -1,0 +1,43 @@
+# name: test/sql/cloud/s3tables/test_create_table_with_properties.test
+# description: test integration with iceberg catalog read
+# group: [s3tables]
+
+require avro
+
+require parquet
+
+require iceberg
+
+require httpfs
+
+require aws
+
+set ignore_error_messages
+
+
+statement ok
+create schema if not exists my_datalake.default;
+
+statement ok
+use my_datalake.default;
+
+statement ok
+drop table if exists properties_table;
+
+statement ok
+create table properties_table (a int)
+WITH (
+    'row_group_size_bytes'='2MB'
+);
+
+query II
+select * from iceberg_table_properties(my_datalake.default.properties_table) where key like '%row_group_size_bytes%';
+----
+row_group_size_bytes	2MB
+
+#TODO: Parquet copy now
+
+statement ok
+insert into my_datalake.default.properties_table select
+	42 a
+;

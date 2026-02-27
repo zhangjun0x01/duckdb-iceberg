@@ -43,7 +43,9 @@ IcebergInsert::IcebergInsert(PhysicalPlan &physical_plan, const vector<LogicalTy
 }
 
 IcebergCopyInput::IcebergCopyInput(ClientContext &context, IcebergTableEntry &table, const IcebergTableSchema &schema)
-    : catalog(table.catalog.Cast<IcebergCatalog>()), columns(table.GetColumns()), schema(schema) {
+: catalog(table.catalog.Cast<IcebergCatalog>()), columns(table.GetColumns()),
+table_info(table.table_info),
+schema(schema) {
 	data_path = table.table_info.table_metadata.GetDataPath();
 }
 
@@ -400,6 +402,16 @@ PhysicalOperator &IcebergInsert::PlanCopyForInsert(ClientContext &context, Physi
 	}
 
 	auto wat = GetBindInput(copy_input);
+
+	// Expose relevant parquet copy options
+	auto table_properties = copy_input.table_info.table_metadata.GetTableProperties();
+
+	auto row_group_size_bytes = table_properties.find("row_group_size_bytes");
+	if (row_group_size_bytes != table_properties.end()) {
+		wat->options["row_group_size_bytes"].emplace_back(row_group_size_bytes->second);
+	}
+	//TODO: expose the rest
+
 	auto bind_input = CopyFunctionBindInput(*wat);
 
 	auto function_data = copy_fun->function.copy_to_bind(context, bind_input, names_to_write, types_to_write);
@@ -505,6 +517,14 @@ PhysicalOperator &IcebergCatalog::PlanInsert(ClientContext &context, PhysicalPla
 
 	// Create Copy Info
 	IcebergCopyInput info(context, table_entry, schema);
+	for (auto &property : info.table_info.table_metadata.GetTableProperties()) {
+		printf("something");
+	}
+
+	/* TODO: How do I expose to DuckDB?
+	 *	- I thought it was
+	 */
+	info.table_info.table_metadata.GetTableProperties();
 	auto &insert = planner.Make<IcebergInsert>(op, op.table, op.column_index_map);
 	auto &physical_copy = IcebergInsert::PlanCopyForInsert(context, planner, info, plan);
 	insert.children.push_back(physical_copy);
