@@ -62,7 +62,8 @@ static Value ParseDefaultForType(const LogicalType &type, rest_api_objects::Prim
 
 unique_ptr<IcebergColumnDefinition>
 IcebergColumnDefinition::ParseType(const string &name, int32_t field_id, bool required, rest_api_objects::Type &type,
-                                   optional_ptr<rest_api_objects::PrimitiveTypeValue> initial_default) {
+                                   optional_ptr<rest_api_objects::PrimitiveTypeValue> initial_default,
+                                   optional_ptr<rest_api_objects::PrimitiveTypeValue> write_default) {
 	auto res = make_uniq<IcebergColumnDefinition>();
 	res->id = field_id;
 	res->required = required;
@@ -75,22 +76,21 @@ IcebergColumnDefinition::ParseType(const string &name, int32_t field_id, bool re
 		child_list_t<LogicalType> struct_children;
 		for (auto &field_p : struct_type.fields) {
 			auto &field = *field_p;
-			auto child = ParseType(field.name, field.id, field.required, *field.type,
-			                       field.has_initial_default ? &field.initial_default : nullptr);
+			auto child = ParseStructField(field);
 			struct_children.push_back(std::make_pair(child->name, child->type));
 			res->children.push_back(std::move(child));
 		}
 		res->type = LogicalType::STRUCT(std::move(struct_children));
 	} else if (type.has_list_type) {
 		auto &list_type = type.list_type;
-		auto child =
-		    ParseType("element", list_type.element_id, list_type.element_required, *list_type.element, nullptr);
+		auto child = ParseType("element", list_type.element_id, list_type.element_required, *list_type.element, nullptr,
+		                       nullptr);
 		res->type = LogicalType::LIST(child->type);
 		res->children.push_back(std::move(child));
 	} else if (type.has_map_type) {
 		auto &map_type = type.map_type;
 		auto key = ParseType("key", map_type.key_id, true, *map_type.key, nullptr);
-		auto value = ParseType("value", map_type.value_id, map_type.value_required, *map_type.value, nullptr);
+		auto value = ParseType("value", map_type.value_id, map_type.value_required, *map_type.value, nullptr, nullptr);
 		res->type = LogicalType::MAP(key->type, value->type);
 		res->children.push_back(std::move(key));
 		res->children.push_back(std::move(value));
@@ -100,6 +100,9 @@ IcebergColumnDefinition::ParseType(const string &name, int32_t field_id, bool re
 
 	if (initial_default) {
 		res->initial_default = ParseDefaultForType(res->type, *initial_default);
+	}
+	if (write_default) {
+		res->write_default = ParseDefaultForType(res->type, *write_default);
 	}
 	return res;
 }
@@ -168,8 +171,9 @@ LogicalType IcebergColumnDefinition::ParsePrimitiveTypeString(const string &type
 }
 
 unique_ptr<IcebergColumnDefinition> IcebergColumnDefinition::ParseStructField(rest_api_objects::StructField &field) {
-	return ParseType(field.name, field.id, field.required, *field.type,
-	                 field.has_initial_default ? &field.initial_default : nullptr);
+	auto field_initial_default = field.has_initial_default ? &field.initial_default : nullptr;
+	auto field_write_default = field.has_write_default ? &field.write_default : nullptr;
+	return ParseType(field.name, field.id, field.required, *field.type, field_initial_default, field_write_default);
 }
 
 bool IcebergColumnDefinition::IsIcebergPrimitiveType() {
