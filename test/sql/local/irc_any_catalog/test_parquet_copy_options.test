@@ -14,7 +14,6 @@ require aws
 
 set ignore_error_messages
 
-
 statement ok
 create schema if not exists my_datalake.default;
 
@@ -35,9 +34,10 @@ select * from iceberg_table_properties(my_datalake.default.properties_table) whe
 ----
 row_group_size_bytes	2MB
 
-#TODO: Parquet copy now
-
+# Trigger parquet copy
 statement ok
 insert into my_datalake.default.properties_table select
 	42 a
 ;
+
+-#TODO: Verify that duckdb actually received row_group_size_bytes?
