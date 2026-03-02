@@ -211,6 +211,9 @@ ColumnDefinition IcebergColumnDefinition::GetColumnDefinition() const {
 	}
 	if (default_to_use) {
 		//! FIXME: the expression needs to be more advanced for nested types
+		if (type.IsNested()) {
+			throw NotImplementedException("DEFAULT values for nested types are not supported currently");
+		}
 		return ColumnDefinition(name, type, make_uniq<ConstantExpression>(*default_to_use), TableColumnType::STANDARD);
 	} else {
 		return ColumnDefinition(name, type);
