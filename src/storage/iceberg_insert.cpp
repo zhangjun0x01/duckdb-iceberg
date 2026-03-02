@@ -517,14 +517,6 @@ PhysicalOperator &IcebergCatalog::PlanInsert(ClientContext &context, PhysicalPla
 
 	// Create Copy Info
 	IcebergCopyInput info(context, table_entry, schema);
-	for (auto &property : info.table_info.table_metadata.GetTableProperties()) {
-		printf("something");
-	}
-
-	/* TODO: How do I expose to DuckDB?
-	 *	- I thought it was
-	 */
-	info.table_info.table_metadata.GetTableProperties();
 	auto &insert = planner.Make<IcebergInsert>(op, op.table, op.column_index_map);
 	auto &physical_copy = IcebergInsert::PlanCopyForInsert(context, planner, info, plan);
 	insert.children.push_back(physical_copy);
