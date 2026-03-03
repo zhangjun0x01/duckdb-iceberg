@@ -9,6 +9,8 @@
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/helper.hpp"
+#include "duckdb/parser/column_definition.hpp"
+#include "duckdb/parser/expression/constant_expression.hpp"
 
 namespace duckdb {
 
@@ -24,13 +26,14 @@ public:
 	          optional_ptr<rest_api_objects::PrimitiveTypeValue> initial_default = nullptr,
 	          optional_ptr<rest_api_objects::PrimitiveTypeValue> write_default = nullptr);
 	bool IsIcebergPrimitiveType();
+	ColumnDefinition GetColumnDefinition() const;
 
 public:
 	int32_t id;
 	string name;
 	LogicalType type;
-	Value initial_default;
-	Value write_default;
+	unique_ptr<Value> initial_default;
+	unique_ptr<Value> write_default;
 	bool required;
 	vector<unique_ptr<IcebergColumnDefinition>> children;
 };

@@ -239,7 +239,7 @@ optional_ptr<CatalogEntry> IcebergTableInformation::CreateSchemaVersion(IcebergT
 	CreateTableInfo info;
 	info.table = name;
 	for (auto &col : table_schema.columns) {
-		info.columns.AddColumn(ColumnDefinition(col->name, col->type));
+		info.columns.AddColumn(col->GetColumnDefinition());
 	}
 
 	auto table_entry = make_uniq<IcebergTableEntry>(*this, catalog, schema, info);
