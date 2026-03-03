@@ -496,7 +496,9 @@ PhysicalOperator &IcebergCatalog::PlanInsert(ClientContext &context, PhysicalPla
 		throw BinderException("ON CONFLICT clause not yet supported for insertion into Iceberg table");
 	}
 
-	VerifyDirectInsertionOrder(op);
+	if (!op.column_index_map.empty()) {
+		plan = planner.ResolveDefaultsProjection(op, *plan);
+	}
 
 	auto &table_entry = op.table.Cast<IcebergTableEntry>();
 	table_entry.PrepareIcebergScanFromEntry(context);
@@ -511,14 +513,6 @@ PhysicalOperator &IcebergCatalog::PlanInsert(ClientContext &context, PhysicalPla
 		auto &sort_spec = table_info.table_metadata.GetLatestSortOrder();
 		if (sort_spec.IsSorted()) {
 			throw NotImplementedException("INSERT into a sorted iceberg table is not supported yet");
-		}
-	}
-
-	for (auto &column_p : schema.columns) {
-		auto &column = *column_p;
-		if (!column.write_default.IsNull()) {
-			throw NotImplementedException("INSERT into column (%s) with 'write_default: %s' not supported yet",
-			                              column.name, column.write_default.ToSQLString());
 		}
 	}
 
