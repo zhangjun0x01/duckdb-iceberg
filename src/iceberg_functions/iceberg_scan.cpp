@@ -52,6 +52,9 @@ static void IcebergScanSerialize(Serializer &serializer, const optional_ptr<Func
                                  const TableFunction &function) {
 	throw NotImplementedException("IcebergScan serialization not implemented");
 }
+static unique_ptr<FunctionData> IcebergScanDeserialize(Deserializer &deserializer, TableFunction &function) {
+	throw NotImplementedException("IcebergScan deserialization not implemented");
+}
 
 BindInfo IcebergBindInfo(const optional_ptr<FunctionData> bind_data) {
 	auto &multi_file_data = bind_data->Cast<MultiFileBindData>();
@@ -88,7 +91,7 @@ TableFunctionSet IcebergFunctions::GetIcebergScanFunction(ExtensionLoader &loade
 		// Unset all of these: they are either broken, very inefficient.
 		// TODO: implement/fix these
 		function.serialize = IcebergScanSerialize;
-		function.deserialize = nullptr;
+		function.deserialize = IcebergScanDeserialize;
 
 		function.statistics = nullptr;
 		function.table_scan_progress = nullptr;

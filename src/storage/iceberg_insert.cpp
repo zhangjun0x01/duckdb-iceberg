@@ -514,6 +514,14 @@ PhysicalOperator &IcebergCatalog::PlanInsert(ClientContext &context, PhysicalPla
 		}
 	}
 
+	for (auto &column_p : schema.columns) {
+		auto &column = *column_p;
+		if (!column.write_default.IsNull()) {
+			throw NotImplementedException("INSERT into column (%s) with 'write_default: %s' not supported yet",
+			                              column.name, column.write_default.ToSQLString());
+		}
+	}
+
 	// Create Copy Info
 	IcebergCopyInput info(context, table_entry, schema);
 	auto &insert = planner.Make<IcebergInsert>(op, op.table, op.column_index_map);
