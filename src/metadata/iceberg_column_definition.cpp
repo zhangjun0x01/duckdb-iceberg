@@ -167,6 +167,9 @@ LogicalType IcebergColumnDefinition::ParsePrimitiveTypeString(const string &type
 		auto scale = std::stoi(digits[1]);
 		return LogicalType::DECIMAL(width, scale);
 	}
+	if (type_str == "variant") {
+		return LogicalType::VARIANT();
+	}
 	throw InvalidConfigurationException("Unrecognized primitive type: %s", type_str);
 }
 
@@ -176,7 +179,7 @@ unique_ptr<IcebergColumnDefinition> IcebergColumnDefinition::ParseStructField(re
 	return ParseType(field.name, field.id, field.required, *field.type, field_initial_default, field_write_default);
 }
 
-bool IcebergColumnDefinition::IsIcebergPrimitiveType() {
+bool IcebergColumnDefinition::IsIcebergPrimitiveType() const {
 	switch (type.id()) {
 	case LogicalTypeId::TINYINT:
 	case LogicalTypeId::SMALLINT:
@@ -194,6 +197,7 @@ bool IcebergColumnDefinition::IsIcebergPrimitiveType() {
 	case LogicalTypeId::TIME:
 	case LogicalTypeId::TIMESTAMP:
 	case LogicalTypeId::TIMESTAMP_TZ:
+	case LogicalTypeId::VARIANT:
 		return true;
 	default:
 		return false;

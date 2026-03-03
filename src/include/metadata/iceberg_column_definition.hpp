@@ -25,7 +25,7 @@ public:
 	ParseType(const string &name, int32_t field_id, bool required, rest_api_objects::Type &iceberg_type,
 	          optional_ptr<rest_api_objects::PrimitiveTypeValue> initial_default = nullptr,
 	          optional_ptr<rest_api_objects::PrimitiveTypeValue> write_default = nullptr);
-	bool IsIcebergPrimitiveType();
+	bool IsIcebergPrimitiveType() const;
 	ColumnDefinition GetColumnDefinition() const;
 
 public:
