@@ -98,13 +98,6 @@ jobs:
           python3 -m pip install duckdb
           python3 -m scripts.data_generators.generate_data lakekeeper
 
-      - name: Build extension
-        env:
-          GEN: ninja
-          STATIC_LIBCPP: 1
-        run: |
-          make release
-
       - name: Run Lakekeeper Specific Tests
         env:
           LAKEKEEPER_SERVER_AVAILABLE: 1
