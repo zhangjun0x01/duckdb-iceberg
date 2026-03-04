@@ -111,16 +111,15 @@ static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, cons
 
 static void AddStructField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj,
                            const rest_api_objects::StructField &column) {
-	yyjson_mut_obj_add_strcpy(doc, field_obj, "name", column.name.c_str());
 	yyjson_mut_obj_add_uint(doc, field_obj, "id", column.id);
+	yyjson_mut_obj_add_strcpy(doc, field_obj, "name", column.name.c_str());
+	yyjson_mut_obj_add_bool(doc, field_obj, "required", column.required);
 	if (!column.type->has_primitive_type) {
 		auto type_obj = yyjson_mut_obj_add_obj(doc, field_obj, "type");
 		AddUnnamedField(doc, type_obj, *column.type);
-		yyjson_mut_obj_add_bool(doc, field_obj, "required", column.required);
 		return;
 	}
 	yyjson_mut_obj_add_strcpy(doc, field_obj, "type", column.type->primitive_type.value.c_str());
-	yyjson_mut_obj_add_bool(doc, field_obj, "required", column.required);
 }
 
 static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, const rest_api_objects::Type &column) {
@@ -132,7 +131,6 @@ static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, cons
 			AddStructField(doc, nested_field_obj, *field);
 		}
 	} else if (column.has_list_type) {
-		auto type_obj = yyjson_mut_obj_add_obj(doc, field_obj, "type");
 		yyjson_mut_obj_add_strcpy(doc, field_obj, "type", "list");
 		auto &list_type = column.list_type;
 		yyjson_mut_obj_add_uint(doc, field_obj, "element-id", list_type.element_id);
@@ -171,6 +169,8 @@ static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, cons
 void IcebergTableSchema::SchemaToJson(yyjson_mut_doc *doc, yyjson_mut_val *root_object,
                                       const rest_api_objects::Schema &schema) {
 	yyjson_mut_obj_add_strcpy(doc, root_object, "type", "struct");
+	D_ASSERT(schema.object_1.has_schema_id);
+	yyjson_mut_obj_add_uint(doc, root_object, "schema-id", schema.object_1.schema_id);
 	auto fields_arr = yyjson_mut_obj_add_arr(doc, root_object, "fields");
 	// populate the fields
 	for (auto &field : schema.struct_type.fields) {
@@ -178,9 +178,6 @@ void IcebergTableSchema::SchemaToJson(yyjson_mut_doc *doc, yyjson_mut_val *root_
 		// add name and id for top level items immediately
 		AddStructField(doc, field_obj, *field);
 	}
-
-	D_ASSERT(schema.object_1.has_schema_id);
-	yyjson_mut_obj_add_uint(doc, root_object, "schema-id", schema.object_1.schema_id);
 	yyjson_mut_obj_add_arr(doc, root_object, "identifier-field-ids");
 }
 
