@@ -12,52 +12,22 @@ jobs:
     name: Test against Lakekeeper Catalog
     runs-on: ubuntu-latest
     steps:
-      - name: Install required ubuntu packages
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -qq software-properties-common
-          sudo add-apt-repository ppa:git-core/ppa
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -qq \
-            ninja-build \
-            make gcc-multilib \
-            g++-multilib \
-            libssl-dev \
-            wget \
-            openjdk-8-jdk \
-            zip \
-            maven \
-            unixodbc-dev \
-            libc6-dev-i386 \
-            lib32readline6-dev \
-            libssl-dev \
-            libcurl4-gnutls-dev \
-            libexpat1-dev \
-            gettext \
-            unzip \
-            build-essential \
-            checkinstall \
-            libffi-dev \
-            curl \
-            libz-dev \
-            openssh-client
-          sudo apt-get install -y -qq tar pkg-config
-          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'true'
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11.1
+      - name: Download DuckDB-Iceberg artifact
+        uses: actions/download-artifact@v4
         with:
-          vcpkgGitCommitId: 84bab45d415d22042bd0b9081aea57f362da3f35
+          name: ${{ inputs.artifact-name }}
+          path: build/release
 
-      - name: Setup Ccache
-        uses: hendrikmuhs/ccache-action@main
-        continue-on-error: true
+      - name: Restore permissions
+        run: |
+          find ./build/release -type f -name 'duckdb*' -exec chmod +x {} \;
+          find ./build/release -type f -name 'unittest*' -exec chmod +x {} \;
 
       - name: Add minio host entry
         run: |
