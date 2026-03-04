@@ -1,5 +1,5 @@
 # name: test/sql/local/irc_custom_setup/test_set_properties_on_local_files.test
-# group: [table_properties]
+# group: [irc_custom_setup]
 
 require-env ICEBERG_SERVER_AVAILABLE
 
