@@ -446,11 +446,11 @@ void IcebergTableInformation::SetDefaultSpec(IcebergTransaction &transaction) {
 	transaction_data->TableSetDefaultSpec();
 }
 void IcebergTableInformation::SetProperties(IcebergTransaction &transaction,
-                                            case_insensitive_map_t<string> properties) {
+                                            const case_insensitive_map_t<string> &properties) {
 	InitTransactionData(transaction);
 	transaction_data->TableSetProperties(properties);
 }
-void IcebergTableInformation::RemoveProperties(IcebergTransaction &transaction, vector<string> properties) {
+void IcebergTableInformation::RemoveProperties(IcebergTransaction &transaction, const vector<string> &properties) {
 	InitTransactionData(transaction);
 	transaction_data->TableRemoveProperties(properties);
 }
