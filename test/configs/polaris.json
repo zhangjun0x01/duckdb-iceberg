@@ -38,7 +38,6 @@
         "test/sql/local/irc_any_catalog/reads/test_read_from_table_with_deletes.test",
         "test/sql/local/irc_any_catalog/reads/test_read_partitioned_table_type_promotion.test",
         "test/sql/local/irc_any_catalog/reads/test_requests_to_partitioned_table.test",
-        "test/sql/local/irc_any_catalog/table_properties/test_set_table_properties.test",
         "test/sql/local/irc_any_catalog/test_drop_and_create_table_in_a_transaction.test",
         "test/sql/local/irc_any_catalog/test_row_lineage_write.test",
         "test/sql/local/irc_any_catalog/transactions/test_transactional_updates_error_omits_stacktrace.test",
