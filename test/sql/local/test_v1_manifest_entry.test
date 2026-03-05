@@ -12,6 +12,8 @@ require httpfs
 
 require core_functions
 
+require-env DUCKDB_ICEBERG_HAVE_GENERATED_DATA
+
 # Do not ignore 'HTTP' error messages!
 set ignore_error_messages
 
