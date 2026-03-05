@@ -23,6 +23,28 @@ use my_datalake.default;
 statement ok
 drop table if exists properties_table;
 
+# Test default beviour
+statement ok
+create table properties_table (my_col int);
+
+statement ok
+insert into my_datalake.default.properties_table SELECT * FROM range(100000) my_col;
+
+statement ok
+set variable parquet_filepath = (select file_path from iceberg_metadata(my_datalake.default.properties_table) limit 1);
+
+query I
+select row_group_bytes from parquet_metadata(getvariable('parquet_filepath'));
+----
+400031
+
+statement ok
+drop table if exists properties_table;
+
+# Test with copy option set
+statement ok
+SET preserve_insertion_order=false;
+
 statement ok
 create table properties_table (my_col int)
 WITH (
@@ -35,13 +57,8 @@ select * from iceberg_table_properties(my_datalake.default.properties_table) whe
 row_group_size_bytes	200KB
 
 statement ok
-SET preserve_insertion_order=false;
-
-# Trigger parquet copy
-statement ok
 insert into my_datalake.default.properties_table SELECT * FROM range(100000) my_col;
 
-#Verify that duckdb actually received row_group_size_bytes
 statement ok
 set variable parquet_filepath = (select file_path from iceberg_metadata(my_datalake.default.properties_table) limit 1);
 
