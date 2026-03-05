@@ -1,0 +1,32 @@
+# name: test/sql/local/test_v1_manifest_entry.test
+# description: Test ducklake updates
+# group: [local]
+
+require avro
+
+require parquet
+
+require iceberg
+
+require httpfs
+
+require core_functions
+
+# Do not ignore 'HTTP' error messages!
+set ignore_error_messages
+
+statement ok
+CALL enable_logging('HTTP');
+
+statement ok
+set logging_level='debug'
+
+# NOTE: explicitly don't set 'allow_moved_paths' because that will break the path resolution for the files that were added with 'add_files'
+query IIIIIII
+from iceberg_scan('__WORKING_DIRECTORY__/data/persistent/duckdb_repro/fake_data_test', version='v3') order by all limit 5;
+----
+1	item_1	A	100.72066009104778	87	true	AdprtkyHPoEINejLRmQCTyTh
+2	item_2	C	87.19946834130788	12	true	JMkYCFABmCSDdFgZAxdUrLbL
+3	item_3	B	106.88741455110518	56	false	kWAumEDCAiBcfBaMgmxSmpcy
+4	item_4	B	102.55511937139035	98	true	NlvcvwQtTtRTHawGRoQqozzy
+5	item_5	B	96.72102917910664	5	false	uIyLeTeNhpjjBMW EeEzscrN
