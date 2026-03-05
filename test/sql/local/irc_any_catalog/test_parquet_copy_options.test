@@ -48,13 +48,13 @@ SET preserve_insertion_order=false;
 statement ok
 create table properties_table (my_col int)
 WITH (
-    'row_group_size_bytes'='200KB'
+    'write.parquet.row-group-size-bytes'='200KB'
 );
 
 query II
-select * from iceberg_table_properties(my_datalake.default.properties_table) where key like '%row_group_size_bytes%';
+select * from iceberg_table_properties(my_datalake.default.properties_table) where key like '%row-group-size-bytes%';
 ----
-row_group_size_bytes	200KB
+write.parquet.row-group-size-bytes	200KB
 
 statement ok
 insert into my_datalake.default.properties_table SELECT * FROM range(100000) my_col;
