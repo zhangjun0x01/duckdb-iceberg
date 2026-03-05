@@ -21,11 +21,11 @@ struct IcebergCreateTableRequest;
 
 struct IcebergTransactionData {
 public:
-	IcebergTransactionData(ClientContext &context, IcebergTableInformation &table_info);
+	IcebergTransactionData(ClientContext &context, const IcebergTableInformation &table_info);
 
 public:
 	IcebergManifestFile CreateManifestFile(int64_t snapshot_id, sequence_number_t sequence_number,
-	                                       IcebergTableMetadata &table_metadata,
+	                                       const IcebergTableMetadata &table_metadata,
 	                                       IcebergManifestContentType manifest_content_type,
 	                                       vector<IcebergManifestEntry> &&data_files);
 	void AddSnapshot(IcebergSnapshotOperationType operation, vector<IcebergManifestEntry> &&data_files,
@@ -42,18 +42,23 @@ public:
 	void TableAddSortOrder();
 	void TableSetDefaultSortOrder();
 	void TableSetDefaultSpec();
-	void TableSetProperties(case_insensitive_map_t<string> properties);
-	void TableRemoveProperties(vector<string> properties);
+	void TableSetProperties(const case_insensitive_map_t<string> &properties);
+	void TableRemoveProperties(const vector<string> &properties);
 	void TableSetLocation();
+
+private:
+	void CacheExistingManifestList(const IcebergTableMetadata &metadata);
 
 public:
 	ClientContext &context;
-	IcebergTableInformation &table_info;
+	const IcebergTableInformation &table_info;
 	//! schema updates etc.
 	vector<unique_ptr<IcebergTableUpdate>> updates;
 	//! has the table been deleted in the current transaction
 	bool is_deleted;
 	vector<unique_ptr<IcebergTableRequirement>> requirements;
+	//! Cached manifest list from the source snapshot
+	vector<IcebergManifestFile> existing_manifest_list;
 
 	//! Every insert/update/delete creates an alter of the table data
 	vector<reference<IcebergAddSnapshot>> alters;
