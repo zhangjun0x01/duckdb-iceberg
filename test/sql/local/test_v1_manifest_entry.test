@@ -23,7 +23,7 @@ set logging_level='debug'
 
 # NOTE: explicitly don't set 'allow_moved_paths' because that will break the path resolution for the files that were added with 'add_files'
 query IIIIIII
-from iceberg_scan('__WORKING_DIRECTORY__/data/persistent/duckdb_repro/fake_data_test', version='v3') order by all limit 5;
+from iceberg_scan('__WORKING_DIRECTORY__/data/generated/iceberg/spark-local/test_add_files/fake_data_test', version='v3') order by all limit 5;
 ----
 1	item_1	A	100.72066009104778	87	true	AdprtkyHPoEINejLRmQCTyTh
 2	item_2	C	87.19946834130788	12	true	JMkYCFABmCSDdFgZAxdUrLbL
