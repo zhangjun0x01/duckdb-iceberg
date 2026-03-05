@@ -27,8 +27,8 @@ set logging_level='debug'
 query IIIIIII
 from iceberg_scan('__WORKING_DIRECTORY__/data/generated/iceberg/spark-local/test_add_files/fake_data_test', version='v3') order by all limit 5;
 ----
-1	item_1	A	100.72066009104778	87	true	AdprtkyHPoEINejLRmQCTyTh
-2	item_2	C	87.19946834130788	12	true	JMkYCFABmCSDdFgZAxdUrLbL
-3	item_3	B	106.88741455110518	56	false	kWAumEDCAiBcfBaMgmxSmpcy
-4	item_4	B	102.55511937139035	98	true	NlvcvwQtTtRTHawGRoQqozzy
-5	item_5	B	96.72102917910664	5	false	uIyLeTeNhpjjBMW EeEzscrN
+1	item_1	B	102.73847061680321	79	0	414e512817404e21495a225b
+2	item_2	C	104.80067261496472	1	0	6b6bb45ad79b3389124406dd
+3	item_3	B	107.32764055727459	44	0	b6d5297b72e1b1189dc018dc
+4	item_4	C	107.97803773450478	24	1	0e9b913f39c0e9f659e3baed
+5	item_5	C	101.58062211123314	84	1	ab0a491ac42ee973170badbf

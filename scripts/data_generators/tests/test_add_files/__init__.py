@@ -1,48 +1,56 @@
 from scripts.data_generators.tests.base import IcebergTest
 import pathlib
-import tempfile
 import duckdb
-import numpy as np
-import pandas as pd
-import string
 
 import os
 from typing import Type, List, Optional
-import shutil
 
 SCRIPT_DIR = os.path.dirname(__file__)
 FILES_DIR = os.path.join(SCRIPT_DIR, '..', '..', '..', 'data', 'generated', 'files')
 
 def generate_files():
-	rng = np.random.default_rng(42)
-	n_rows = 100_000
+    n_rows = 100_000
 
-	def string_generator(length: int = 24) -> str:
-		char_list = [*list(string.ascii_letters), " "]
-		random_integers = rng.integers(0, len(char_list), length)
-		random_characters = [char_list[i] for i in random_integers]
-		return "".join(random_characters).strip()
+    parquet_dir = pathlib.Path(FILES_DIR)
+    parquet_dir.mkdir(parents=True, exist_ok=True)
 
+    con = duckdb.connect()
+    con.execute("select setseed(0.42)")
 
-	fake_data = pd.DataFrame({
-		"id": range(1, n_rows + 1),
-		"name": [f"item_{i}" for i in range(1, n_rows + 1)],
-		"category": rng.choice(["A", "B", "C"], size=n_rows),
-		"value": rng.normal(100, 15, n_rows),
-		"count": rng.integers(1, 100, n_rows),
-		"active": rng.choice([True, False], size=n_rows),
-		"description": [string_generator() for _ in range(n_rows)],
-	})
+    # Generate synthetic data inside DuckDB
+    con.execute(f"""
+        CREATE OR REPLACE TABLE fake_data AS
+        SELECT
+            i AS id,
+            'item_' || i AS name,
+            CASE floor(random() * 3)
+                WHEN 0 THEN 'A'
+                WHEN 1 THEN 'B'
+                ELSE 'C'
+            END AS category,
+            100 + 15 * random() AS value,
+            CAST(floor(random() * 99) + 1 AS INTEGER) AS count,
+            random() < 0.5 AS active,
+            substr(md5(random()::VARCHAR), 1, 24) AS description
+        FROM range(1, {n_rows + 1}) t(i)
+    """)
 
-	parquet_dir = pathlib.Path(FILES_DIR)
-	parquet_dir.mkdir(parents=True, exist_ok=True)
+    # Get categories
+    categories = [row[0] for row in con.execute(
+        "SELECT DISTINCT category FROM fake_data"
+    ).fetchall()]
 
-	# Write multiple parquet files
-	for i, category in enumerate(fake_data["category"].unique()):
-		category_data = fake_data[fake_data["category"] == category]
-		file_path = parquet_dir / f"file_{i}.parquet"
-		category_data.to_parquet(file_path, index=False)
-
+    # Write one parquet file per category
+    for i, category in enumerate(categories):
+        file_path = parquet_dir / f"file_{i}.parquet"
+        con.execute(f"""
+            COPY (
+                SELECT * FROM fake_data
+                WHERE category = '{category}'
+            )
+            TO '{file_path}'
+            (FORMAT PARQUET)
+        """)
 
 @IcebergTest.register()
 class Test(IcebergTest):
