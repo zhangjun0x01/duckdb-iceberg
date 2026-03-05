@@ -43,9 +43,8 @@ IcebergInsert::IcebergInsert(PhysicalPlan &physical_plan, const vector<LogicalTy
 }
 
 IcebergCopyInput::IcebergCopyInput(ClientContext &context, IcebergTableEntry &table, const IcebergTableSchema &schema)
-: catalog(table.catalog.Cast<IcebergCatalog>()), columns(table.GetColumns()),
-table_info(table.table_info),
-schema(schema) {
+    : catalog(table.catalog.Cast<IcebergCatalog>()), columns(table.GetColumns()), table_info(table.table_info),
+      schema(schema) {
 	data_path = table.table_info.table_metadata.GetDataPath();
 }
 
@@ -386,14 +385,12 @@ vector<IcebergManifestEntry> IcebergInsert::GetInsertManifestEntries(IcebergInse
 	return std::move(global_state.written_files);
 }
 
-void ExposeProperty(const unique_ptr<CopyInfo> &copy_info, case_insensitive_map_t<string> table_properties, const string &duckdb_copy_option, const string &iceberg_write_property = nullptr) {
-	string table_property;
+void ExposeProperty(const unique_ptr<CopyInfo> &copy_info, case_insensitive_map_t<string> table_properties,
+                    const string &duckdb_copy_option, string iceberg_write_property = "") {
 	if (iceberg_write_property.length() == 0) {
-		table_property = iceberg_write_property;
-	} else {
-		table_property = duckdb_copy_option;
+		iceberg_write_property = duckdb_copy_option;
 	}
-	auto property = table_properties.find(table_property);
+	auto property = table_properties.find(iceberg_write_property);
 	if (property != table_properties.end()) {
 		copy_info->options[duckdb_copy_option].emplace_back(property->second);
 	}
@@ -422,15 +419,17 @@ PhysicalOperator &IcebergInsert::PlanCopyForInsert(ClientContext &context, Physi
 	ExposeProperty(copy_info, table_properties, "chunk_size");
 	ExposeProperty(copy_info, table_properties, "row_groups_per_file");
 
-	// Iceberg Copy Options https://iceberg.apache.org/docs/1.10.0/configuration/?h=commit.retry.num+retries#write-properties
-	ExposeProperty(copy_info, table_properties,"row_group_size_bytes");
-	ExposeProperty(copy_info, table_properties,"codec", "compression-codec");
-	ExposeProperty(copy_info, table_properties,"compression_level", "compression-level");
-	ExposeProperty(copy_info, table_properties,"string_dictionary_page_size_limit", "dict-size-bytes");
+	// Iceberg Copy Options
+	// https://iceberg.apache.org/docs/1.10.0/configuration/?h=commit.retry.num+retries#write-properties
+	ExposeProperty(copy_info, table_properties, "row_group_size_bytes");
+	ExposeProperty(copy_info, table_properties, "codec", "compression-codec");
+	ExposeProperty(copy_info, table_properties, "compression_level", "compression-level");
+	ExposeProperty(copy_info, table_properties, "string_dictionary_page_size_limit", "dict-size-bytes");
 
 	// TODO: Iceberg properties for bloom filter are per column, duckdb's seems to be per table.
 	// ExposeProperty(copy_info, table_properties,"bloom_filter_false_positive_ratio", "bloom-filter-fpp.column.col1");
-	// ExposeProperty(copy_info, table_properties,"write_bloom_filter", "write.parquet.bloom-filter-enabled.column.col1");
+	// ExposeProperty(copy_info, table_properties,"write_bloom_filter",
+	// "write.parquet.bloom-filter-enabled.column.col1");
 
 	auto bind_input = CopyFunctionBindInput(*copy_info);
 
