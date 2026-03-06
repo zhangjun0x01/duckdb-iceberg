@@ -33,6 +33,7 @@
         "test/sql/local/irc_any_catalog/insert/test_write_upper_and_lower_bounds_single_values.test",
         "test/sql/local/irc_any_catalog/irc_catalog_read_deletes.test",
         "test/sql/local/irc_any_catalog/other_engines/test_create_table_then_read_with_other_engine.test",
+        "test/sql/local/irc_any_catalog/partitioning/test_partitioning_pushdown_bucket.test",
         "test/sql/local/irc_any_catalog/reads/partitioned_reads/test_read_from_month_partitioned_date.test",
         "test/sql/local/irc_any_catalog/reads/test_read_from_partitioned_table.test",
         "test/sql/local/irc_any_catalog/reads/test_read_from_table_with_deletes.test",
