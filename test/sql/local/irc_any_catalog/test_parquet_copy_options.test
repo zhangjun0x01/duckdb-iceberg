@@ -2,6 +2,10 @@
 # description: test integration with iceberg catalog read
 # group: [irc_any_catalog]
 
+require-env ICEBERG_SERVER_AVAILABLE
+
+require-env SECRETS_CREATED_AND_CATALOG_ATTACHED
+
 require avro
 
 require parquet
