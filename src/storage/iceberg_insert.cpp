@@ -404,7 +404,7 @@ static const IcebergParquetOptionMapping ICEBERG_TABLE_PROPERTY_MAPPING[] = {
     {"write.parquet.row-group-size", "row_group_size"},
     {"write.parquet.page-size-bytes", "chunk_size"},
     {"write.parquet.row-groups-per-file", "row_groups_per_file"},
-    // DuckDB native parquet options
+    // Parquet native options
     {"row_group_size", "row_group_size"},
     {"chunk_size", "chunk_size"},
     {"row_groups_per_file", "row_groups_per_file"}};
