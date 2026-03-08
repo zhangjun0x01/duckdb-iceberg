@@ -347,7 +347,8 @@ idx_t WriteToFile(const IcebergTableMetadata &table_metadata, const IcebergManif
 		yyjson_mut_obj_add_strcpy(doc, partition_struct, "type", "struct");
 		//! NOTE: this has to be populated with the fields of the partition spec when we support INSERT into a
 		//! partitioned table
-		[[maybe_unused]] auto partition_fields = yyjson_mut_obj_add_arr(doc, partition_struct, "fields");
+		auto partition_fields = yyjson_mut_obj_add_arr(doc, partition_struct, "fields");
+		(void)partition_fields;
 	}
 
 	{
