@@ -200,6 +200,8 @@ BuildManifestSchema(const IcebergSnapshot &snapshot, const IcebergTableMetadata 
 	if (iceberg_version >= 2) {
 		MultiFileColumnDefinition content("content", LogicalType::INTEGER);
 		content.identifier = Value::INTEGER(CONTENT);
+		//! Default to 0 if missing (V1 compatibility)
+		content.default_expression = make_uniq<ConstantExpression>(Value::INTEGER(0));
 		data_file.children.push_back(content);
 	}
 
@@ -402,7 +404,6 @@ bool IcebergAvroMultiFileReader::Bind(MultiFileOptions &options, MultiFileList &
 		schema = manifest_list::BuildManifestListSchema(metadata);
 	} else {
 		auto &manifest_file_scan = scan_info.Cast<IcebergManifestFileScanInfo>();
-		auto &manifest_files = manifest_file_scan.manifest_files;
 		auto &partition_field_id_to_type = manifest_file_scan.partition_field_id_to_type;
 		schema = manifest_file::BuildManifestSchema(snapshot, metadata, partition_field_id_to_type);
 	}
@@ -438,10 +439,14 @@ void IcebergAvroMultiFileReader::FinalizeChunk(ClientContext &context, const Mul
 	auto &manifest_file = manifest_scan_info.manifest_files[manifest_file_idx];
 
 	idx_t count = output_chunk.size();
+	auto &status_column = output_chunk.data[0];
+	status_column.Flatten(count);
+
 	auto &sequence_number_column = output_chunk.data[2];
 	sequence_number_column.Flatten(count);
 	auto &sequence_number_validity = FlatVector::Validity(sequence_number_column);
 	auto sequence_number_data = FlatVector::GetData<int64_t>(sequence_number_column);
+	auto status_column_data = FlatVector::GetData<int32_t>(status_column);
 	for (idx_t i = 0; i < count; i++) {
 		if (sequence_number_validity.RowIsValid(i)) {
 			//! Sequence number is explicitly set
@@ -483,10 +488,15 @@ void IcebergAvroMultiFileReader::FinalizeChunk(ClientContext &context, const Mul
 			//! First row id is explicitly set
 			continue;
 		}
-		first_row_id_validity.SetValid(i);
-		D_ASSERT(manifest_file.has_first_row_id);
-		first_row_id_data[i] = manifest_file.first_row_id + start_row_id;
-		start_row_id += record_count_data[i];
+		if (status_column_data[i] == 2) {
+			// Manifest entry is deleted, skip
+			continue;
+		}
+		if (manifest_file.has_first_row_id) {
+			first_row_id_validity.SetValid(i);
+			first_row_id_data[i] = manifest_file.first_row_id + start_row_id;
+			start_row_id += record_count_data[i];
+		}
 	}
 	(void)output_chunk;
 	count += 1;

@@ -1,4 +1,4 @@
-#include "../include/storage/iceberg_transaction.hpp"
+#include "storage/iceberg_transaction.hpp"
 
 #include "duckdb/common/assert.hpp"
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
@@ -166,6 +166,7 @@ void CommitTableToJSON(yyjson_mut_doc *doc, yyjson_mut_val *root_object,
 			yyjson_mut_obj_add_int(doc, spec_json, "spec-id", ref_update.spec.spec_id);
 			// Add fields array, later we can add the fields
 			auto fields_arr = yyjson_mut_obj_add_arr(doc, spec_json, "fields");
+			(void)fields_arr;
 		} else if (update.has_set_default_sort_order_update) {
 			auto update_json = yyjson_mut_arr_add_obj(doc, updates_array);
 			auto &ref_update = update.set_default_sort_order_update;
@@ -181,6 +182,7 @@ void CommitTableToJSON(yyjson_mut_doc *doc, yyjson_mut_val *root_object,
 			yyjson_mut_obj_add_int(doc, sort_order_json, "order-id", ref_update.sort_order.order_id);
 			// Add fields array, later we can add the fields
 			auto fields_arr = yyjson_mut_obj_add_arr(doc, sort_order_json, "fields");
+			(void)fields_arr;
 		} else if (update.has_set_location_update) {
 			auto update_json = yyjson_mut_arr_add_obj(doc, updates_array);
 			auto &ref_update = update.set_location_update;
@@ -298,21 +300,14 @@ TableTransactionInfo IcebergTransaction::GetTransactionRequest(ClientContext &co
 		table_change.identifier.name = table_info.name;
 		table_change.has_identifier = true;
 
-		auto &metadata = table_info.table_metadata;
+		auto &metadata = commit_state.table_info.table_metadata;
 		auto current_snapshot = metadata.GetLatestSnapshot();
-		commit_state.latest_snapshot = current_snapshot;
-		//! We want to copy over all the existing manifests from the existing manifest list
-		if (current_snapshot) {
-			auto &manifest_list_path = current_snapshot->manifest_list;
-			//! Read the manifest list
-			auto scan = AvroScan::ScanManifestList(*current_snapshot, metadata, context, manifest_list_path);
-			auto manifest_list_reader = make_uniq<manifest_list::ManifestListReader>(*scan);
-			while (!manifest_list_reader->Finished()) {
-				manifest_list_reader->Read(STANDARD_VECTOR_SIZE, commit_state.manifests);
-			}
-		}
-
 		auto &transaction_data = *commit_state.table_info.transaction_data;
+		if (!transaction_data.alters.empty()) {
+			commit_state.manifests = transaction_data.existing_manifest_list;
+		}
+		commit_state.latest_snapshot = current_snapshot;
+
 		for (auto &update : transaction_data.updates) {
 			if (update->type == IcebergTableUpdateType::ADD_SNAPSHOT) {
 				// we need to recreate the keys in the current context.

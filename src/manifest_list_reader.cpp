@@ -121,19 +121,16 @@ idx_t ManifestListReader::ReadChunk(idx_t offset, idx_t count, vector<IcebergMan
 			manifest.existing_rows_count = existing_rows_count_data[index];
 			manifest.deleted_rows_count = deleted_rows_count_data[index];
 		} else {
-			manifest.content = IcebergManifestContentType::DATA;
+			//! SPEC: Manifest list field sequence-number must default to 0
 			manifest.sequence_number = 0;
+			//! SPEC: Manifest list field min-sequence-number must default to 0
 			manifest.min_sequence_number = 0;
+			//! SPEC: Manifest list field content must default to 0 (data)
+			manifest.content = IcebergManifestContentType::DATA;
 		}
 
 		if (iceberg_version >= 3) {
-			if (!FlatVector::Validity(*first_row_id).RowIsValid(index)) {
-				if (manifest.content != IcebergManifestContentType::DELETE) {
-					throw InternalException(
-					    "Malformed manifest_file detected, 'first-row-id' is not set for a DATA manifest");
-				}
-				manifest.has_first_row_id = false;
-			} else {
+			if (FlatVector::Validity(*first_row_id).RowIsValid(index)) {
 				manifest.first_row_id = first_row_id_data[index];
 				manifest.has_first_row_id = true;
 			}
