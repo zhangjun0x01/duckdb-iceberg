@@ -13,6 +13,8 @@
 #include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/storage/caching_file_system.hpp"
 #include "duckdb/common/types/blob.hpp"
+#include "duckdb/planner/expression_binder/constant_binder.hpp"
+#include "duckdb/planner/binder.hpp"
 
 using namespace duckdb_yyjson;
 namespace duckdb {
@@ -163,15 +165,14 @@ static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, cons
 	}
 }
 
-static Value ExtractInitialValue(optional_ptr<const ParsedExpression> initial_expr, const LogicalType &type) {
+static Value ExtractInitialValue(ConstantBinder &binder, ClientContext &context,
+                                 optional_ptr<const ParsedExpression> initial_expr, const LogicalType &type) {
 	if (!initial_expr) {
 		return Value(type);
 	}
-	if (initial_expr->type != ExpressionType::VALUE_CONSTANT) {
-		throw NotImplementedException("Only constant DEFAULT values are supported");
-	}
-	auto &const_default = initial_expr->Cast<ConstantExpression>();
-	return const_default.value.DefaultCastAs(type);
+	auto expr = initial_expr->Copy();
+	auto bound_expr = binder.Bind(expr, nullptr);
+	return ExpressionExecutor::EvaluateScalar(context, *bound_expr).DefaultCastAs(type);
 }
 
 shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(ClientContext &context,
@@ -192,6 +193,8 @@ shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(Cl
 	};
 
 	auto &constraints = table_entry.GetConstraints();
+	auto binder = Binder::CreateBinder(context);
+	ConstantBinder constant_binder(*binder, context, "DEFAULT");
 	for (auto column = column_iterator.begin(); column != column_iterator.end(); ++column) {
 		auto &column_def = *column;
 		auto name = column_def.Name();
@@ -222,7 +225,7 @@ shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(Cl
 		auto iceberg_column_def = IcebergColumnDefinition::ParseType(name, first_id, required, type, nullptr);
 		if (column_def.HasDefaultValue()) {
 			auto &default_expr = column_def.DefaultValue();
-			auto val = ExtractInitialValue(default_expr, logical_type);
+			auto val = ExtractInitialValue(constant_binder, context, default_expr, logical_type);
 			if (table_metadata.iceberg_version < 3 && !val.IsNull()) {
 				throw InvalidInputException("non-null DEFAULT values are not supported for <V3 tables");
 			}
