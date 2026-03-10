@@ -1,0 +1,62 @@
+# name: test/sql/local/irc_any_catalog/create/test_create_default.test
+# group: [create]
+
+require-env ICEBERG_SERVER_AVAILABLE
+
+require-env SECRETS_CREATED_AND_CATALOG_ATTACHED
+
+require avro
+
+require parquet
+
+require iceberg
+
+require httpfs
+
+# Do not ignore 'HTTP' error messages!
+set ignore_error_messages
+
+statement ok
+set enable_logging=true
+
+statement ok
+set logging_level='debug'
+
+statement ok
+CREATE SCHEMA IF NOT EXISTS my_datalake.default;
+
+statement ok
+DROP TABLE IF EXISTS my_datalake.default.tbl;
+
+#statement error
+#CREATE TABLE my_datalake.default.tbl(
+#	item_id int,
+#	balance int DEFAULT 0
+#);
+#----
+#Invalid Input Error: non-null DEFAULT values are not supported for <V3 tables
+
+statement ok
+CREATE TABLE my_datalake.default.tbl(
+	item_id int,
+	balance int DEFAULT 0
+) WITH (
+	'format-version'='3'
+);
+
+statement ok
+insert into my_datalake.default.tbl VALUES(-42, DEFAULT);
+
+query II
+select * from my_datalake.default.tbl;
+----
+-42	0
+
+statement ok
+insert into my_datalake.default.tbl DEFAULT VALUES;
+
+query II
+select * from my_datalake.default.tbl order by all;
+----
+-42	0
+NULL	0
