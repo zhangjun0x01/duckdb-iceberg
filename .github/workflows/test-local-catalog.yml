@@ -56,9 +56,9 @@ jobs:
           source .venv-spark4/bin/activate
           python3 -m pip install -r scripts/requirements.txt
 
-      - name: Setup fixture
+      - name: Setup fixture local
         run: |
-          make fixture
+          make fixture_local
 
       - name: Run local tests
         env:
