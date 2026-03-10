@@ -54,13 +54,11 @@ nessie_start: clone_nessie set_nessie_env
 	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
 nessie_data:
-	@echo "Activating venv-spark4"
-	python3 -m venv .venv-spark4
-	source .venv-spark4/bin/activate
-	python3 -m pip install -r scripts/requirements.txt
-
-	@echo "Generating data..."
-	@if [ -f "$(NESSIE_ENV_FILE)" ]; then set -a; . ./$(NESSIE_ENV_FILE); set +a; fi; \
+	@echo "Setting up venv-spark4 and generating data..."
+	python3 -m venv .venv-spark4 && \
+	. .venv-spark4/bin/activate && \
+	python3 -m pip install -r scripts/requirements.txt && \
+	if [ -f "$(NESSIE_ENV_FILE)" ]; then set -a; . ./$(NESSIE_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data nessie
 
 nessie: nessie_start nessie_data
