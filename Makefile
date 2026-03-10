@@ -35,7 +35,7 @@ data_clean:
 
 NESSIE_ENV_FILE ?= scripts/nessie.env
 
-clone_nessie:
+nessie_clone:
 	@if [ ! -d "nessie" ]; then \
 		echo "Cloning Nessie repository..."; \
 		git clone https://github.com/projectnessie/nessie.git nessie; \
@@ -43,17 +43,17 @@ clone_nessie:
 		echo "Nessie repository exists."; \
 	fi
 
-set_nessie_env:
+nessie_start:
+	@echo "Starting Nessie catalog..."
+	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
+
+nessie_set_env:
 	@if [ -f "$(NESSIE_ENV_FILE)" ]; then \
 		echo "Loading env from $(NESSIE_ENV_FILE)"; \
 		set -a; . ./$(NESSIE_ENV_FILE); set +a; \
 	fi; \
 
-nessie_start: clone_nessie set_nessie_env
-	@echo "Starting Nessie catalog..."
-	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
-
-nessie_data:
+nessie_data: nessie_set_env
 	@echo "Setting up venv-spark4 and generating data..."
 	python3 -m venv .venv-spark4 && \
 	. .venv-spark4/bin/activate && \
@@ -61,4 +61,4 @@ nessie_data:
 	if [ -f "$(NESSIE_ENV_FILE)" ]; then set -a; . ./$(NESSIE_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data nessie
 
-nessie: nessie_start nessie_data
+nessie: nessie_clone nessie_start nessie_data

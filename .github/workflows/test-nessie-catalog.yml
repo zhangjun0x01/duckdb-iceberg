@@ -44,6 +44,10 @@ jobs:
           sudo apt update -y -qq
           sudo apt install -y -qq python3-venv
 
+      - name: Clone Nessie
+        run: |
+          make nessie_clone
+
       - name: GitHub machine compatibility
         working-directory: nessie/docker
         run: |
@@ -54,7 +58,7 @@ jobs:
           # all client timeouts are 86400 right now
           sed -i 's/86400/1800/g' authn-keycloak/config/iceberg-realm.json
 
-      - name: Install required python packages
+      - name: Start Nessie
         run: |
           make nessie_start
 
