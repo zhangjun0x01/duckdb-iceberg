@@ -47,13 +47,13 @@ nessie_start:
 	@echo "Starting Nessie catalog..."
 	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
-nessie_set_env:
+nessie_data:
+	@echo "Setting env variables"
 	@if [ -f "$(NESSIE_ENV_FILE)" ]; then \
-		echo "Loading env from $(NESSIE_ENV_FILE)"; \
-		set -a; . ./$(NESSIE_ENV_FILE); set +a; \
-	fi; \
+    		echo "Loading env from $(NESSIE_ENV_FILE)"; \
+    		set -a; . ./$(NESSIE_ENV_FILE); set +a; \
+    	fi; \
 
-nessie_data: nessie_set_env
 	@echo "Setting up venv-spark4 and generating data..."
 	python3 -m venv .venv-spark4 && \
 	. .venv-spark4/bin/activate && \
