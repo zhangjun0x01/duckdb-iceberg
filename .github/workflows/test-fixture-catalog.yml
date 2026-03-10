@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Start fixture and generate data
+      - name: Setup fixture
         run: |
           make fixture
 

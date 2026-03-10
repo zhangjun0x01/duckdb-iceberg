@@ -42,25 +42,9 @@ jobs:
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io
           sudo apt install -y -qq python3-venv
 
-      - name: Clone Polaris
+      - name: Setup Polaris
         run: |
-          make polaris_clone
-
-      - name: Build Polaris
-        run: |
-          make polaris_build
-
-      - name: Start Polaris
-        run: |
-          make polaris_start
-
-      - name: Setup Polaris catalog
-        run: |
-          make polaris_setup
-
-      - name: Generate Polaris Data
-        run: |
-          make polaris_data
+          make polaris
 
       - name: Run Polaris Specific Tests
         env:

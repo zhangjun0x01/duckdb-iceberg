@@ -73,8 +73,6 @@ lakekeeper_start:
 	@echo "Starting Lakekeeper catalog..."
 	@grep -q '127.0.0.1 minio' /etc/hosts || (echo "Adding minio host entry..." && echo "127.0.0.1 minio" | sudo tee -a /etc/hosts)
 	(cd lakekeeper/examples/access-control-simple && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
-
-lakekeeper_bootstrap:
 	@echo "Bootstrapping Lakekeeper..."
 	cd lakekeeper/examples/access-control-simple && \
 	docker compose exec jupyter start.sh bash -lc "\
@@ -87,10 +85,9 @@ lakekeeper_data:
 	python3 -m venv .venv-spark4 && \
 	. .venv-spark4/bin/activate && \
 	python3 -m pip install -r scripts/requirements.txt && \
-	if [ -f "$(LAKEKEEPER_ENV_FILE)" ]; then echo "Loading env from $(LAKEKEEPER_ENV_FILE)"; set -a; . ./$(LAKEKEEPER_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data lakekeeper
 
-lakekeeper: lakekeeper_clone lakekeeper_start lakekeeper_bootstrap lakekeeper_data
+lakekeeper: lakekeeper_clone lakekeeper_start lakekeeper_data
 
 # ==========================================
 # ================ POLARIS =================
@@ -126,12 +123,10 @@ polaris_start:
 		sleep 5; \
 		attempt=$$((attempt + 1)); \
 	done; \
-	echo "Polaris is healthy"
-
-polaris_setup:
-	@echo "Setting up Polaris catalog and extracting credentials..."
+	@echo "Polaris is healthy"
+	@echo "Quick-starting Polaris catalog and extracting credentials..."
 	cd polaris_catalog && python3 -m venv . && . bin/activate && make client-regenerate && cd client/python && python3 -m pip install . && cd ../../../ && \
-	cd polaris_catalog && ../scripts/polaris/setup_polaris_catalog.sh > user_credentials.json && cd .. && \
+	cd polaris_catalog && ../scripts/polaris/quickstart_polaris_catalog.sh > user_credentials.json && cd .. && \
 	python3 scripts/polaris/get_polaris_client_creds.py && \
 	perl -i -pe "s/%PLACEHOLDER_POLARIS_CLIENT_ID%/$$(cat polaris_client_id.txt)/g; s/%PLACEHOLDER_POLARIS_CLIENT_SECRET%/$$(cat polaris_client_secret.txt)/g" test/configs/polaris.json
 
@@ -145,7 +140,7 @@ polaris_data:
 	export POLARIS_CLIENT_SECRET=$$(cat polaris_client_secret.txt) && \
 	python3 -m scripts.data_generators.generate_data polaris
 
-polaris: polaris_clone polaris_build polaris_start polaris_setup polaris_data
+polaris: polaris_clone polaris_build polaris_start polaris_data
 
 # ==========================================
 # ================ FIXTURE =================
@@ -154,7 +149,10 @@ polaris: polaris_clone polaris_build polaris_start polaris_setup polaris_data
 FIXTURE_ENV_FILE ?= scripts/envs/fixture.env
 
 fixture_start:
-	@echo "Starting fixture REST catalog..."
+	@echo "Starting apache/iceberg-rest-fixture catalog..."
+	rm -rf data/generated
+	mkdir -p data/generated/iceberg/spark-rest
+	mkdir -p data/generated/intermediates
 	(cd scripts && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
 fixture_data:
@@ -163,6 +161,7 @@ fixture_data:
 	. .venv-spark4/bin/activate && \
 	python3 -m pip install -r scripts/requirements.txt && \
 	if [ -f "$(FIXTURE_ENV_FILE)" ]; then echo "Loading env from $(FIXTURE_ENV_FILE)"; set -a; . ./$(FIXTURE_ENV_FILE); set +a; fi && \
+	rm -rf data/generated
 	python3 -m scripts.data_generators.generate_data spark-rest
 
 fixture: fixture_start fixture_data
