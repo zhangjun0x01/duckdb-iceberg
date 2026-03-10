@@ -62,6 +62,22 @@ jobs:
         run: |
           make nessie_start
 
+      - name: Wait for Nessie/Keycloak
+        run: |
+          max_attempts=30
+          attempt=1
+          sleep 10
+          while ! curl -sf "http://localhost:8080/realms/master/.well-known/openid-configuration"; do
+            if [ $attempt -gt $max_attempts ]; then
+              echo "Keycloak failed to initialize after $max_attempts attempts"
+              exit 1
+            fi
+            echo "Waiting for Keycloak to initialize (attempt $attempt/$max_attempts)..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          echo "Keycloak is healthy"
+
       - name: Run Nessie Specific Tests
         env:
           NESSIE_SERVER_AVAILABLE: 1
