@@ -12,12 +12,80 @@
 #include "duckdb/parallel/thread_context.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/storage/caching_file_system.hpp"
+#include "duckdb/common/types/blob.hpp"
 
 using namespace duckdb_yyjson;
 namespace duckdb {
 
 IcebergCreateTableRequest::IcebergCreateTableRequest(const IcebergTableInformation &table_info)
     : table_info(table_info) {
+}
+
+static yyjson_mut_val *PrimitiveTypeFromValue(yyjson_mut_doc *doc, const Value &value) {
+	if (value.IsNull()) {
+		return yyjson_mut_null(doc);
+	}
+	auto &type = value.type();
+	D_ASSERT(!type.IsNested());
+	switch (type.id()) {
+	//! BooleanTypeValue
+	case LogicalTypeId::BOOLEAN: {
+		auto val = value.GetValue<bool>();
+		return yyjson_mut_bool(doc, val);
+	}
+	//! IntegerTypeValue
+	case LogicalTypeId::INTEGER: {
+		auto val = value.GetValue<int32_t>();
+		return yyjson_mut_sint(doc, val);
+	}
+	//! LongTypeValue
+	case LogicalTypeId::BIGINT: {
+		auto val = value.GetValue<int64_t>();
+		return yyjson_mut_sint(doc, val);
+	}
+	//! FloatTypeValue
+	case LogicalTypeId::FLOAT: {
+		auto val = value.GetValue<float>();
+		return yyjson_mut_real(doc, val);
+	}
+	//! DoubleTypeValue
+	case LogicalTypeId::DOUBLE: {
+		auto val = value.GetValue<double>();
+		return yyjson_mut_real(doc, val);
+	}
+	//! DecimalTypeValue
+	case LogicalTypeId::DECIMAL: {
+		//! FIXME: Spec says scientific notation should be used for negative scale decimals
+		return yyjson_mut_strcpy(doc, value.ToString().c_str());
+	}
+	//! StringTypeValue
+	//! UUIDTypeValue
+	//! DateTypeValue
+	//! TimeTypeValue
+	//! TimestampTypeValue
+	//! TimestampTzTypeValue
+	//! TimestampNanoTypeValue
+	case LogicalTypeId::VARCHAR:
+	case LogicalTypeId::UUID:
+	case LogicalTypeId::DATE:
+	case LogicalTypeId::TIME:
+	case LogicalTypeId::TIMESTAMP:
+	case LogicalTypeId::TIMESTAMP_TZ:
+	case LogicalTypeId::TIMESTAMP_NS: {
+		return yyjson_mut_strcpy(doc, value.ToString().c_str());
+	}
+	//! FIXME: missing TimestampTzNanoTypeValue
+	//! FIXME: missing FixedTypeValue
+	//! BinaryTypeValue
+	case LogicalTypeId::BLOB: {
+		auto str = value.GetValue<string>();
+		string_t duckdb_str(str.c_str(), str.size());
+		auto blob_str = Blob::ToString(duckdb_str);
+		return yyjson_mut_strncpy(doc, blob_str.c_str(), blob_str.size());
+	}
+	default:
+		throw InvalidConfigurationException("Type %s not supported for Iceberg tables", type.ToString());
+	}
 }
 
 static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, const IcebergColumnDefinition &column);
@@ -33,6 +101,10 @@ static void AddNamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, const 
 	}
 	yyjson_mut_obj_add_strcpy(doc, field_obj, "type", IcebergTypeHelper::LogicalTypeToIcebergType(column.type).c_str());
 	yyjson_mut_obj_add_bool(doc, field_obj, "required", column.required);
+	if (column.initial_default) {
+		yyjson_mut_obj_add_val(doc, field_obj, "initial-default", PrimitiveTypeFromValue(doc, *column.initial_default));
+	}
+	//! FIXME: write column.write_default;
 }
 
 static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, const IcebergColumnDefinition &column) {
@@ -91,10 +163,23 @@ static void AddUnnamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, cons
 	}
 }
 
-shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(const IcebergTableEntry &table_entry) {
+static Value ExtractInitialValue(optional_ptr<const ParsedExpression> initial_expr, const LogicalType &type) {
+	if (!initial_expr) {
+		return Value(type);
+	}
+	if (initial_expr->type != ExpressionType::VALUE_CONSTANT) {
+		throw NotImplementedException("Only constant DEFAULT values are supported");
+	}
+	auto &const_default = initial_expr->Cast<ConstantExpression>();
+	return const_default.value.DefaultCastAs(type);
+}
+
+shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(ClientContext &context,
+                                                                              const IcebergTableEntry &table_entry) {
 	auto schema = make_shared_ptr<IcebergTableSchema>();
+	auto &table_metadata = table_entry.table_info.table_metadata;
 	// should this be a different schema id?
-	schema->schema_id = table_entry.table_info.table_metadata.current_schema_id;
+	schema->schema_id = table_metadata.current_schema_id;
 
 	// TODO: this can all be refactored out
 	//  this makes the IcebergTableSchema, and we use that to dump data to JSON.
@@ -108,7 +193,8 @@ shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(co
 
 	auto &constraints = table_entry.GetConstraints();
 	for (auto column = column_iterator.begin(); column != column_iterator.end(); ++column) {
-		auto name = (*column).Name();
+		auto &column_def = *column;
+		auto name = column_def.Name();
 		// check if there is a not null constraint
 		bool required = false;
 		if (!constraints.empty()) {
@@ -123,7 +209,7 @@ shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(co
 			}
 		}
 
-		auto logical_type = (*column).GetType();
+		const auto &logical_type = column_def.GetType();
 		idx_t first_id = next_field_id();
 		rest_api_objects::Type type;
 		if (logical_type.IsNested()) {
@@ -133,8 +219,16 @@ shared_ptr<IcebergTableSchema> IcebergCreateTableRequest::CreateIcebergSchema(co
 			type.primitive_type = rest_api_objects::PrimitiveType();
 			type.primitive_type.value = IcebergTypeHelper::LogicalTypeToIcebergType(logical_type);
 		}
-		auto column_def = IcebergColumnDefinition::ParseType(name, first_id, required, type, nullptr);
-		schema->columns.push_back(std::move(column_def));
+		auto iceberg_column_def = IcebergColumnDefinition::ParseType(name, first_id, required, type, nullptr);
+		if (column_def.HasDefaultValue()) {
+			auto &default_expr = column_def.DefaultValue();
+			auto val = ExtractInitialValue(default_expr, logical_type);
+			if (table_metadata.iceberg_version < 3 && !val.IsNull()) {
+				throw InvalidInputException("non-null DEFAULT values are not supported for <V3 tables");
+			}
+			iceberg_column_def->initial_default = make_uniq<Value>(val);
+		}
+		schema->columns.push_back(std::move(iceberg_column_def));
 	}
 	return schema;
 }
