@@ -175,6 +175,6 @@ fixture_data_local:
 	python3 -m scripts.data_generators.generate_data local
 
 
-fixture-local: fixture_start fixture_data_local
+fixture_local: fixture_start fixture_data_local
 
 
