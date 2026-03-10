@@ -23,6 +23,24 @@ IcebergCreateTableRequest::IcebergCreateTableRequest(const IcebergTableInformati
     : table_info(table_info) {
 }
 
+static string ConvertBlobDefault(const string_t &str) {
+	string result;
+	result.resize(str.GetSize() * 2);
+	idx_t str_idx = 0;
+	auto data = str.GetData();
+	auto len = str.GetSize();
+	for (idx_t i = 0; i < len; i++) {
+		auto byte_a = (data[i] >> 4) & 0x0F;
+		auto byte_b = data[i] & 0x0F;
+		D_ASSERT(byte_a >= 0 && byte_a < 16);
+		D_ASSERT(byte_b >= 0 && byte_b < 16);
+		// non-ascii characters are rendered as hexadecimal (e.g. \x00)
+		result[str_idx++] = Blob::HEX_TABLE[byte_a];
+		result[str_idx++] = Blob::HEX_TABLE[byte_b];
+	}
+	return result;
+}
+
 static yyjson_mut_val *PrimitiveTypeFromValue(yyjson_mut_doc *doc, const Value &value) {
 	if (value.IsNull()) {
 		return yyjson_mut_null(doc);
@@ -80,9 +98,8 @@ static yyjson_mut_val *PrimitiveTypeFromValue(yyjson_mut_doc *doc, const Value &
 	//! FIXME: missing FixedTypeValue
 	//! BinaryTypeValue
 	case LogicalTypeId::BLOB: {
-		auto str = value.GetValue<string>();
-		string_t duckdb_str(str.c_str(), str.size());
-		auto blob_str = Blob::ToString(duckdb_str);
+		auto str = value.GetValueUnsafe<string_t>();
+		auto blob_str = ConvertBlobDefault(str);
 		return yyjson_mut_strncpy(doc, blob_str.c_str(), blob_str.size());
 	}
 	default:
