@@ -113,14 +113,14 @@ static yyjson_mut_val *PrimitiveTypeValueToJSON(yyjson_mut_doc *doc,
                                                 const rest_api_objects::PrimitiveTypeValue &value) {
 	if (value.has_boolean_type_value) {
 		return yyjson_mut_bool(doc, value.boolean_type_value.value);
-	} else if (value.has_integer_type_value) {
-		return yyjson_mut_int(doc, value.integer_type_value.value);
 	} else if (value.has_long_type_value) {
 		return yyjson_mut_int(doc, value.long_type_value.value);
-	} else if (value.has_float_type_value) {
-		return yyjson_mut_real(doc, value.float_type_value.value);
+	} else if (value.has_integer_type_value) {
+		return yyjson_mut_int(doc, value.integer_type_value.value);
 	} else if (value.has_double_type_value) {
 		return yyjson_mut_real(doc, value.double_type_value.value);
+	} else if (value.has_float_type_value) {
+		return yyjson_mut_real(doc, value.float_type_value.value);
 	} else if (value.has_decimal_type_value) {
 		auto &str = value.decimal_type_value.value;
 		return yyjson_mut_strncpy(doc, str.c_str(), str.size());

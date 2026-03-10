@@ -88,11 +88,25 @@ static yyjson_mut_val *PrimitiveTypeFromValue(yyjson_mut_doc *doc, const Value &
 	case LogicalTypeId::VARCHAR:
 	case LogicalTypeId::UUID:
 	case LogicalTypeId::DATE:
-	case LogicalTypeId::TIME:
+	case LogicalTypeId::TIME: {
+		auto str = value.ToString();
+		return yyjson_mut_strcpy(doc, str.c_str());
+	}
 	case LogicalTypeId::TIMESTAMP:
-	case LogicalTypeId::TIMESTAMP_TZ:
 	case LogicalTypeId::TIMESTAMP_NS: {
-		return yyjson_mut_strcpy(doc, value.ToString().c_str());
+		auto raw = value.ToString();
+		auto splits = StringUtil::Split(raw, ' ');
+		D_ASSERT(splits.size() == 2);
+		auto str = StringUtil::Join(splits, "T");
+		return yyjson_mut_strcpy(doc, str.c_str());
+	}
+	case LogicalTypeId::TIMESTAMP_TZ: {
+		auto raw = value.ToString();
+		auto splits = StringUtil::Split(raw, ' ');
+		D_ASSERT(splits.size() == 2);
+		auto str = StringUtil::Join(splits, "T");
+		str += ":00";
+		return yyjson_mut_strcpy(doc, str.c_str());
 	}
 	//! FIXME: missing TimestampTzNanoTypeValue
 	//! FIXME: missing FixedTypeValue
