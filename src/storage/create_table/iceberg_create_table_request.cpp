@@ -46,8 +46,10 @@ static yyjson_mut_val *PrimitiveTypeFromValue(yyjson_mut_doc *doc, const Value &
 		return yyjson_mut_null(doc);
 	}
 	auto &type = value.type();
-	D_ASSERT(!type.IsNested());
 	switch (type.id()) {
+	case LogicalTypeId::VARIANT: {
+		throw NotImplementedException("DEFAULT values for VARIANT are not supported yet");
+	}
 	//! BooleanTypeValue
 	case LogicalTypeId::BOOLEAN: {
 		auto val = value.GetValue<bool>();
@@ -130,6 +132,10 @@ static void AddNamedField(yyjson_mut_doc *doc, yyjson_mut_val *field_obj, const 
 		auto type_obj = yyjson_mut_obj_add_obj(doc, field_obj, "type");
 		AddUnnamedField(doc, type_obj, column);
 		yyjson_mut_obj_add_bool(doc, field_obj, "required", column.required);
+		if (column.initial_default) {
+			throw NotImplementedException("DEFAULT values for nested types (like %s) not implemented",
+			                              column.type.ToString());
+		}
 		return;
 	}
 	yyjson_mut_obj_add_strcpy(doc, field_obj, "type", IcebergTypeHelper::LogicalTypeToIcebergType(column.type).c_str());
