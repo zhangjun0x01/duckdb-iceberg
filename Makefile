@@ -15,7 +15,7 @@ include extension-ci-tools/makefiles/duckdb_extension.Makefile
 include make/fixture.mk
 include make/lakekeeper.mk
 include make/nessie.mk
-include make/polaris.mk.mk
+include make/polaris.mk
 
 install_requirements:
 	python3 -m pip install -r scripts/requirements.txt
