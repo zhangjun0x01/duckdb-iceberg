@@ -14,11 +14,11 @@ if match:
     clientSecret = match.group(2)
     if clientId and clientSecret:
         # Write client_id and client_secret to separate files
-        with open("polaris_client_id.txt", "w") as id_file:
+        with open("tmp/polaris_client_id.txt", "w") as id_file:
             print(f"clientId {clientId}")
             id_file.write(clientId)
 
-        with open("polaris_client_secret.txt", "w") as secret_file:
+        with open("tmp/polaris_client_secret.txt", "w") as secret_file:
             print(f"clientSecret {clientSecret}")
             secret_file.write(clientSecret)
 
