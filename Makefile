@@ -33,16 +33,16 @@ data_clean:
 NESSIE_ENV_FILE ?= scripts/envs/nessie.env
 
 nessie_clone:
-	@if [ ! -d "nessie" ]; then \
+	@if [ ! -d ".catalogs/nessie" ]; then \
 		echo "Cloning Nessie repository..."; \
-		git clone https://github.com/projectnessie/nessie.git nessie; \
+		mkdir -p .catalogs && git clone https://github.com/projectnessie/nessie.git .catalogs/nessie; \
 	else \
 		echo "Nessie repository exists."; \
 	fi
 
 nessie_start: nessie_clone
 	@echo "Starting Nessie catalog..."
-	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
+	(cd .catalogs/nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
 nessie_data:
 	@echo "Setting up venv-spark4 and generating data..."
@@ -61,10 +61,10 @@ nessie: nessie_start nessie_data
 LAKEKEEPER_ENV_FILE ?= scripts/envs/lakekeeper.env
 
 lakekeeper_clone:
-	@if [ ! -d "lakekeeper" ]; then \
+	@if [ ! -d ".catalogs/lakekeeper" ]; then \
 		echo "Cloning Lakekeeper repository..."; \
-		git clone https://github.com/lakekeeper/lakekeeper.git lakekeeper; \
-		cd lakekeeper && git checkout f6aaa4570cf62d54943581e7a00b9f882d9c992d && git apply ../.github/patches/lakekeeper_docker_compose.patch; \
+		mkdir -p .catalogs && git clone https://github.com/lakekeeper/lakekeeper.git .catalogs/lakekeeper; \
+		cd .catalogs/lakekeeper && git checkout f6aaa4570cf62d54943581e7a00b9f882d9c992d && git apply ../../.github/patches/lakekeeper_docker_compose.patch; \
 	else \
 		echo "Lakekeeper repository exists."; \
 	fi
@@ -72,9 +72,9 @@ lakekeeper_clone:
 lakekeeper_start: lakekeeper_clone
 	@echo "Starting Lakekeeper catalog..."
 	@grep -q '127.0.0.1 minio' /etc/hosts || (echo "Adding minio host entry..." && echo "127.0.0.1 minio" | sudo tee -a /etc/hosts)
-	(cd lakekeeper/examples/access-control-simple && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
+	(cd .catalogs/lakekeeper/examples/access-control-simple && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 	@echo "Bootstrapping Lakekeeper..."
-	cd lakekeeper/examples/access-control-simple && \
+	cd .catalogs/lakekeeper/examples/access-control-simple && \
 	docker compose exec jupyter start.sh bash -lc "\
 		jupyter nbconvert --to notebook --execute --output-dir=/tmp /home/jovyan/examples/01-Bootstrap.ipynb && \
 		jupyter nbconvert --to notebook --execute --output-dir=/tmp /home/jovyan/examples/02-Create-Warehouse.ipynb && \
@@ -96,30 +96,30 @@ lakekeeper: lakekeeper_start lakekeeper_data
 POLARIS_ENV_FILE ?= scripts/envs/polaris.env
 
 polaris_clone:
-	@if [ ! -d "polaris_catalog" ]; then \
+	@if [ ! -d ".catalogs/polaris" ]; then \
 		echo "Cloning Polaris repository..."; \
-		git clone https://github.com/apache/polaris.git polaris_catalog; \
-		cd polaris_catalog && git checkout c940ded0f6be44d58ac6f0b6606c41cb08b53304; \
+		mkdir -p .catalogs && git clone https://github.com/apache/polaris.git .catalogs/polaris; \
+		cd .catalogs/polaris && git checkout c940ded0f6be44d58ac6f0b6606c41cb08b53304; \
 	else \
 		echo "Polaris repository exists."; \
 	fi
 
 polaris_build:
-	@if [ -f "polaris_catalog/runtime/server/build/quarkus-app/quarkus-run.jar" ]; then \
+	@if [ -f ".catalogs/polaris/runtime/server/build/quarkus-app/quarkus-run.jar" ]; then \
 		echo "Polaris already built, skipping. Run 'make polaris_rebuild' to force."; \
 	else \
 		echo "Building Polaris..."; \
-		cd polaris_catalog && ./gradlew :polaris-server:assemble -Dquarkus.container-image.build=true && ./gradlew --stop; \
+		cd .catalogs/polaris && ./gradlew :polaris-server:assemble -Dquarkus.container-image.build=true && ./gradlew --stop; \
 	fi
 
 polaris_rebuild:
 	@echo "Rebuilding Polaris (clean)..."
-	cd polaris_catalog && ./gradlew clean :polaris-server:assemble -Dquarkus.container-image.build=true --no-build-cache && ./gradlew --stop
+	cd .catalogs/polaris && ./gradlew clean :polaris-server:assemble -Dquarkus.container-image.build=true --no-build-cache && ./gradlew --stop
 
 polaris_start: polaris_clone polaris_build
 	@echo "Starting Polaris server..."
 	@lsof -ti:8182 | xargs -r kill -9 || true
-	cd polaris_catalog && nohup ./gradlew :polaris-server:run > polaris-server.log 2> polaris-error.log &
+	cd .catalogs/polaris && nohup ./gradlew :polaris-server:run > polaris-server.log 2> polaris-error.log &
 	@echo "Waiting for Polaris to initialize..."
 	@max_attempts=50; attempt=1; \
 	while ! (curl -sf http://localhost:8182/healthcheck || curl -sf http://localhost:8182/q/health); do \
@@ -133,8 +133,8 @@ polaris_start: polaris_clone polaris_build
 	done
 	@echo "Polaris is healthy"
 	@echo "Quick-starting Polaris catalog and extracting credentials..."
-	cd polaris_catalog && python3 -m venv . && . bin/activate && make client-regenerate && cd client/python && python3 -m pip install . && cd ../../../ && \
-	cd polaris_catalog && ../scripts/polaris/quickstart_polaris_catalog.sh > user_credentials.json && cd .. && \
+	cd .catalogs/polaris && python3 -m venv . && . bin/activate && make client-regenerate && cd client/python && python3 -m pip install . && cd ../../../../ && \
+	cd .catalogs/polaris && ../../scripts/polaris/quickstart_polaris_catalog.sh > user_credentials.json && cd ../../ && \
 	python3 scripts/polaris/get_polaris_client_creds.py && \
 	perl -i -pe "s/%PLACEHOLDER_POLARIS_CLIENT_ID%/$$(cat polaris_client_id.txt)/g; s/%PLACEHOLDER_POLARIS_CLIENT_SECRET%/$$(cat polaris_client_secret.txt)/g" test/configs/polaris.json
 
