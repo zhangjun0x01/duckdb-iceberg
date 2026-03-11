@@ -1,5 +1,6 @@
 import re
 import os
+from pathlib import Path
 
 log_content = ""
 # Read the log file (hopefully it isn't too big)
@@ -13,6 +14,9 @@ if match:
     clientId = match.group(1)
     clientSecret = match.group(2)
     if clientId and clientSecret:
+        tmp_dir = Path("tmp")
+        tmp_dir.mkdir(exist_ok=True)
+
         # Write client_id and client_secret to separate files
         with open("tmp/polaris_client_id.txt", "w") as id_file:
             print(f"clientId {clientId}")
