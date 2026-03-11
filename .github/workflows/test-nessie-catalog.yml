@@ -49,7 +49,7 @@ jobs:
           make nessie_clone
 
       - name: GitHub machine compatibility
-        working-directory: nessie/docker
+        working-directory: .catalogs/nessie/docker
         run: |
           # replace $ with $$ in all healthcheck lines, otherwise there are interpolation errors
           # on github machines for some reason
