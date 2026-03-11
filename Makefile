@@ -1,4 +1,4 @@
-.PHONY: set_nessie_env set_lakekeeper_env set_polaris_env set_fixture_env
+.PHONY: fixture lakekeeper polaris nessie
 
 PROJ_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -40,7 +40,7 @@ nessie_clone:
 		echo "Nessie repository exists."; \
 	fi
 
-nessie_start:
+nessie_start: nessie_clone
 	@echo "Starting Nessie catalog..."
 	(cd nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
@@ -52,7 +52,7 @@ nessie_data:
 	if [ -f "$(NESSIE_ENV_FILE)" ]; then echo "Loading env from $(NESSIE_ENV_FILE)"; set -a; . ./$(NESSIE_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data nessie
 
-nessie: nessie_clone nessie_start nessie_data
+nessie: nessie_start nessie_data
 
 # ============================================
 # ================ LAKEKEEPER ================
@@ -69,7 +69,7 @@ lakekeeper_clone:
 		echo "Lakekeeper repository exists."; \
 	fi
 
-lakekeeper_start:
+lakekeeper_start: lakekeeper_clone
 	@echo "Starting Lakekeeper catalog..."
 	@grep -q '127.0.0.1 minio' /etc/hosts || (echo "Adding minio host entry..." && echo "127.0.0.1 minio" | sudo tee -a /etc/hosts)
 	(cd lakekeeper/examples/access-control-simple && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
@@ -87,7 +87,7 @@ lakekeeper_data:
 	python3 -m pip install -r scripts/requirements.txt && \
 	python3 -m scripts.data_generators.generate_data lakekeeper
 
-lakekeeper: lakekeeper_clone lakekeeper_start lakekeeper_data
+lakekeeper: lakekeeper_start lakekeeper_data
 
 # ==========================================
 # ================ POLARIS =================
@@ -105,10 +105,18 @@ polaris_clone:
 	fi
 
 polaris_build:
-	@echo "Building Polaris..."
+	@if [ -f "polaris_catalog/runtime/server/build/quarkus-app/quarkus-run.jar" ]; then \
+		echo "Polaris already built, skipping. Run 'make polaris_rebuild' to force."; \
+	else \
+		echo "Building Polaris..."; \
+		cd polaris_catalog && ./gradlew :polaris-server:assemble -Dquarkus.container-image.build=true && ./gradlew --stop; \
+	fi
+
+polaris_rebuild:
+	@echo "Rebuilding Polaris (clean)..."
 	cd polaris_catalog && ./gradlew clean :polaris-server:assemble -Dquarkus.container-image.build=true --no-build-cache && ./gradlew --stop
 
-polaris_start:
+polaris_start: polaris_clone polaris_build
 	@echo "Starting Polaris server..."
 	@lsof -ti:8182 | xargs -r kill -9 || true
 	cd polaris_catalog && nohup ./gradlew :polaris-server:run > polaris-server.log 2> polaris-error.log &
@@ -140,7 +148,7 @@ polaris_data:
 	export POLARIS_CLIENT_SECRET=$$(cat polaris_client_secret.txt) && \
 	python3 -m scripts.data_generators.generate_data polaris
 
-polaris: polaris_clone polaris_build polaris_start polaris_data
+polaris: polaris_start polaris_data
 
 # ==========================================
 # ================ FIXTURE =================
