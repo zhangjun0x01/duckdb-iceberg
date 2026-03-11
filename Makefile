@@ -12,6 +12,7 @@ CORE_EXTENSIONS='httpfs;parquet;tpch'
 # Include the Makefile from extension-ci-tools
 include extension-ci-tools/makefiles/duckdb_extension.Makefile
 
+include make/common.mk
 include make/fixture.mk
 include make/lakekeeper.mk
 include make/nessie.mk
