@@ -425,9 +425,6 @@ PhysicalOperator &IcebergInsert::PlanCopyForInsert(ClientContext &context, Physi
 	const auto copy_info = GetBindInput(copy_input);
 	const auto table_properties = copy_input.table_info.table_metadata.GetTableProperties();
 
-	// Defaults
-	copy_info->options["codec"].emplace_back("zstd");
-
 	// Map Iceberg write properties to DuckDB parquet copy options
 	for (idx_t i = 0; i < ICEBERG_TABLE_PROPERTY_MAPPING_SIZE; i++) {
 		auto &mapping = ICEBERG_TABLE_PROPERTY_MAPPING[i];
