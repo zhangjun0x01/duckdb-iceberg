@@ -50,8 +50,8 @@ jobs:
         env:
           POLARIS_SERVER_AVAILABLE: 1
         run: |
-          export POLARIS_CLIENT_ID=$(cat polaris_client_id.txt)
-          export POLARIS_CLIENT_SECRET=$(cat polaris_client_secret.txt)
+          export POLARIS_CLIENT_ID=$(cat tmp/polaris_client_id.txt)
+          export POLARIS_CLIENT_SECRET=$(cat tmp/polaris_client_secret.txt)
           ./build/release/test/unittest "$PWD/test/*" --list-test-names-only || true
           ./build/release/test/unittest "$PWD/test/*"
 
@@ -60,8 +60,8 @@ jobs:
           ICEBERG_SERVER_AVAILABLE: 1
           SECRETS_CREATED_AND_CATALOG_ATTACHED: 1
         run: |
-          export POLARIS_CLIENT_ID=$(cat polaris_client_id.txt)
-          export POLARIS_CLIENT_SECRET=$(cat polaris_client_secret.txt)
+          export POLARIS_CLIENT_ID=$(cat tmp/polaris_client_id.txt)
+          export POLARIS_CLIENT_SECRET=$(cat tmp/polaris_client_secret.txt)
           ./build/release/test/unittest "$PWD/test/sql/local/irc_any_catalog/*" --list-test-names-only || true
           ./build/release/test/unittest "$PWD/test/sql/local/irc_any_catalog/*" --test-config test/configs/polaris.json  --autoloading available
 
@@ -71,6 +71,6 @@ jobs:
         with:
           name: polaris-server-logs
           path: |
-            polaris_catalog/polaris-server.log
-            polaris_catalog/polaris-error.log
+            .catalogs/polaris/polaris-server.log
+            .catalogs/polaris/polaris-error.log
           if-no-files-found: ignore
