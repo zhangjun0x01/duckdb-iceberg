@@ -393,17 +393,14 @@ struct IcebergParquetOptionMapping {
 // to
 // https://github.com/duckdb/duckdb/blob/9cbb0656cd34fa3eb890963b9f961bbc8a221fa9/extension/parquet/parquet_extension.cpp#L121
 static const IcebergParquetOptionMapping ICEBERG_TABLE_PROPERTY_MAPPING[] = {
-    {"write.parquet.row-group-size-bytes", "row_group_size_bytes"},
-    {"write.parquet.compression-codec", "codec"},
-    {"write.parquet.compression-level", "compression_level"},
-    {"write.parquet.dict-size-bytes", "string_dictionary_page_size_limit"},
-    {"write.parquet.row-group-size", "row_group_size"},
-    {"write.parquet.page-size-bytes", "chunk_size"},
-    {"write.parquet.row-groups-per-file", "row_groups_per_file"},
-    // Parquet native options
-    {"row_group_size", "row_group_size"},
-    {"chunk_size", "chunk_size"},
-    {"row_groups_per_file", "row_groups_per_file"}};
+	{"write.parquet.row-group-size-bytes", "row_group_size_bytes"},
+	{"write.parquet.compression-codec", "codec"},
+	{"write.parquet.compression-level", "compression_level"},
+	{"write.parquet.dict-size-bytes", "string_dictionary_page_size_limit"},
+	{"write.parquet.row-group-size", "row_group_size"},
+	{"write.parquet.page-size-bytes", "chunk_size"},
+	{"write.parquet.row-groups-per-file", "row_groups_per_file"}
+};
 
 static const idx_t ICEBERG_TABLE_PROPERTY_MAPPING_SIZE =
     sizeof(ICEBERG_TABLE_PROPERTY_MAPPING) / sizeof(IcebergParquetOptionMapping);
@@ -427,6 +424,9 @@ PhysicalOperator &IcebergInsert::PlanCopyForInsert(ClientContext &context, Physi
 
 	const auto copy_info = GetBindInput(copy_input);
 	const auto table_properties = copy_input.table_info.table_metadata.GetTableProperties();
+
+	// Defaults
+	copy_info->options["codec"].emplace_back("zstd");
 
 	// Map Iceberg write properties to DuckDB parquet copy options
 	for (idx_t i = 0; i < ICEBERG_TABLE_PROPERTY_MAPPING_SIZE; i++) {
