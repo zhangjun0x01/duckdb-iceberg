@@ -138,7 +138,7 @@ polaris_start: polaris_clone polaris_build
 	cd .catalogs/polaris && python3 -m venv . && . bin/activate && make client-regenerate && cd client/python && python3 -m pip install . && cd ../../../../ && \
 	cd .catalogs/polaris && ../../scripts/polaris/quickstart_polaris_catalog.sh > user_credentials.json && cd ../../ && \
 	python3 scripts/polaris/get_polaris_client_creds.py && \
-	perl -i -pe "s/%PLACEHOLDER_POLARIS_CLIENT_ID%/$$(cat polaris_client_id.txt)/g; s/%PLACEHOLDER_POLARIS_CLIENT_SECRET%/$$(cat polaris_client_secret.txt)/g" test/configs/polaris.json
+	perl -i -pe "s/%PLACEHOLDER_POLARIS_CLIENT_ID%/$$(cat tmp/polaris_client_id.txt)/g; s/%PLACEHOLDER_POLARIS_CLIENT_SECRET%/$$(cat tmp/polaris_client_secret.txt)/g" test/configs/polaris.json
 
 polaris_data:
 	@echo "Setting up venv-spark4 and generating data..."
@@ -146,8 +146,8 @@ polaris_data:
 	. .venv-spark4/bin/activate && \
 	python3 -m pip install -r scripts/requirements.txt && \
 	if [ -f "$(POLARIS_ENV_FILE)" ]; then echo "Loading env from $(POLARIS_ENV_FILE)"; set -a; . ./$(POLARIS_ENV_FILE); set +a; fi && \
-	export POLARIS_CLIENT_ID=$$(cat polaris_client_id.txt) && \
-	export POLARIS_CLIENT_SECRET=$$(cat polaris_client_secret.txt) && \
+	export POLARIS_CLIENT_ID=$$(cat tmp/polaris_client_id.txt) && \
+	export POLARIS_CLIENT_SECRET=$$(cat tmp/polaris_client_secret.txt) && \
 	python3 -m scripts.data_generators.generate_data polaris
 
 polaris: polaris_start polaris_data
