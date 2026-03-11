@@ -9,10 +9,14 @@ lakekeeper_clone:
 		echo "Lakekeeper repository exists."; \
 	fi
 
+lakekeeper_stop:
+	@echo "Stopping Lakekeeper catalog..."
+	(cd .catalogs/lakekeeper/examples/access-control-simple && docker compose down -v)
+
 lakekeeper_start: lakekeeper_clone
 	@echo "Starting Lakekeeper catalog..."
 	@grep -q '127.0.0.1 minio' /etc/hosts || (echo "Adding minio host entry..." && echo "127.0.0.1 minio" | sudo tee -a /etc/hosts)
-	(cd .catalogs/lakekeeper/examples/access-control-simple && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
+	(cd .catalogs/lakekeeper/examples/access-control-simple && docker compose up -d)
 	@echo "Bootstrapping Lakekeeper..."
 	cd .catalogs/lakekeeper/examples/access-control-simple && \
 	docker compose exec jupyter start.sh bash -lc "\
@@ -27,4 +31,6 @@ lakekeeper_data:
 	python3 -m pip install -r scripts/requirements.txt && \
 	python3 -m scripts.data_generators.generate_data lakekeeper
 
-lakekeeper: lakekeeper_start lakekeeper_data
+lakekeeper_stop_start: lakekeeper_stop lakekeeper_start
+
+lakekeeper: lakekeeper_stop_start lakekeeper_data

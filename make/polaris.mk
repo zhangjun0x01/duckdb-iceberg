@@ -21,9 +21,13 @@ polaris_rebuild:
 	@echo "Rebuilding Polaris (clean)..."
 	cd .catalogs/polaris && ./gradlew clean :polaris-server:assemble -Dquarkus.container-image.build=true --no-build-cache && ./gradlew --stop
 
+polaris_stop:
+	@echo "Stopping Polaris server..."
+	@pkill -f "polaris-server:run" || true
+	@lsof -ti:8182 | xargs -r kill -9 || true
+
 polaris_start: polaris_clone polaris_build
 	@echo "Starting Polaris server..."
-	@lsof -ti:8182 | xargs -r kill -9 || true
 	cd .catalogs/polaris && nohup ./gradlew :polaris-server:run > polaris-server.log 2> polaris-error.log &
 	@echo "Waiting for Polaris to initialize..."
 	@max_attempts=50; attempt=1; \
@@ -53,4 +57,6 @@ polaris_data:
 	export POLARIS_CLIENT_SECRET=$$(cat tmp/polaris_client_secret.txt) && \
 	python3 -m scripts.data_generators.generate_data polaris
 
-polaris: polaris_start polaris_data
+polaris_stop_start: polaris_stop polaris_start
+
+polaris: polaris_stop_start polaris_data
