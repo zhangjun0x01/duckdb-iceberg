@@ -1,39 +1,23 @@
-# Clone Nessie repo if folder doesn't exist
-nessie:
-	@if [ ! -d "nessie" ]; then \
+NESSIE_ENV_FILE ?= scripts/envs/nessie.env
+
+nessie_clone:
+	@if [ ! -d ".catalogs/nessie" ]; then \
 		echo "Cloning Nessie repository..."; \
-		git clone https://github.com/projectnessie/nessie.git nessie; \
+		mkdir -p .catalogs && git clone https://github.com/projectnessie/nessie.git .catalogs/nessie; \
 	else \
-		echo "Nessie repository already exists."; \
+		echo "Nessie repository exists."; \
 	fi
 
-REQUIRED_NESSIE_VARS = \
-	NESSIE_SERVER_AVAILABLE \
-	S3_KEY_ID \
-	S3_SECRET \
-	S3_ENDPOINT \
-	ICEBERG_CLIENT_ID \
-	ICEBERG_CLIENT_SECRET \
-	ICEBERG_ENDPOINT \
-	OAUTH2_SERVER_URI \
-	WAREHOUSE
-
-check_nessie_env:
-	@for var in $(REQUIRED_NESSIE_VARS); do \
-		if [ -z "$${!var}" ]; then \
-			echo "ERROR: $$var is not set."; \
-			echo "Run: source scripts/nessie_env.sh"; \
-			exit 1; \
-		fi; \
-	done
-
-data_nessie: nessie check_nessie_env
+nessie_start: nessie_clone
 	@echo "Starting Nessie catalog..."
-	docker compose -f nessie/docker/catalog-auth-s3/docker-compose.yml up -d
+	(cd .catalogs/nessie/docker/catalog-auth-s3 && docker ps -q | xargs -r docker stop; docker compose down -v && docker compose up -d)
 
-	@echo "Generating data..."
+nessie_data:
+	@echo "Setting up venv-spark4 and generating data..."
+	python3 -m venv .venv-spark4 && \
+	. .venv-spark4/bin/activate && \
+	python3 -m pip install -r scripts/requirements.txt && \
+	if [ -f "$(NESSIE_ENV_FILE)" ]; then echo "Loading env from $(NESSIE_ENV_FILE)"; set -a; . ./$(NESSIE_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data nessie
 
-data_nessie_clean: nessie check_nessie_env
-	@echo "Shutting down Nessie catalog..."
-	docker compose -f nessie/docker/catalog-auth-s3/docker-compose.yml down
+nessie: nessie_start nessie_data
