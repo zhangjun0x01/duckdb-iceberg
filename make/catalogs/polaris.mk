@@ -23,8 +23,7 @@ polaris_rebuild:
 
 polaris_stop:
 	@echo "Stopping Polaris server..."
-	@pgrep -f "gradlew.*polaris-server:run" | xargs -r kill || true
-	@lsof -ti:8182 | xargs -r kill -9 || true
+	cd .catalogs/polaris && ./gradlew --stop
 
 polaris_start: polaris_clone polaris_build polaris_stop
 	$(call stop_active_catalog)
