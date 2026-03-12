@@ -75,6 +75,15 @@ CREATE TABLE my_datalake.default.tbl(
 ----
 Not implemented Error: DEFAULT values for VARIANT are not supported yet
 
+# DEFAULT value of unsupported type
+statement error
+CREATE TABLE my_datalake.default.tbl_types(
+	id int,
+	blob_col BLOB DEFAULT 42
+) WITH ('format-version'='3');
+----
+Invalid Input Error: Failed to cast value: Unimplemented type for cast (INTEGER -> BLOB)
+
 # Test multiple defaults in one table
 statement ok
 CREATE TABLE my_datalake.default.tbl_multi(
