@@ -12,10 +12,11 @@ CORE_EXTENSIONS='httpfs;parquet;tpch'
 # Include the Makefile from extension-ci-tools
 include extension-ci-tools/makefiles/duckdb_extension.Makefile
 
-include make/fixture.mk
-include make/lakekeeper.mk
-include make/nessie.mk
-include make/polaris.mk
+include make/util.mk
+include make/catalogs/fixture.mk
+include make/catalogs/lakekeeper.mk
+include make/catalogs/nessie.mk
+include make/catalogs/polaris.mk
 
 install_requirements:
 	python3 -m pip install -r scripts/requirements.txt

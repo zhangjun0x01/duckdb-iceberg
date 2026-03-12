@@ -12,11 +12,11 @@ nessie_stop:
 	@echo "Stopping Nessie catalog..."
 	(cd .catalogs/nessie/docker/catalog-auth-s3 && docker compose down -v)
 
-nessie_start: nessie_clone
+nessie_start: nessie_clone nessie_stop
+	$(call stop_active_catalog)
 	@echo "Starting Nessie catalog..."
 	(cd .catalogs/nessie/docker/catalog-auth-s3 && docker compose up -d)
-
-nessie_stop_start: nessie_stop nessie_start
+	$(call set_active_catalog,nessie)
 
 nessie_data:
 	@echo "Setting up venv-spark4 and generating data..."
@@ -26,4 +26,4 @@ nessie_data:
 	if [ -f "$(NESSIE_ENV_FILE)" ]; then echo "Loading env from $(NESSIE_ENV_FILE)"; set -a; . ./$(NESSIE_ENV_FILE); set +a; fi && \
 	python3 -m scripts.data_generators.generate_data nessie
 
-nessie: nessie_stop_start nessie_data
+nessie: nessie_start nessie_data

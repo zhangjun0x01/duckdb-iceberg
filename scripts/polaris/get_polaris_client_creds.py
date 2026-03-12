@@ -4,7 +4,7 @@ from pathlib import Path
 
 log_content = ""
 # Read the log file (hopefully it isn't too big)
-with open("polaris_catalog/user_credentials.json", "r") as file:
+with open(".catalogs/polaris/user_credentials.json", "r") as file:
     log_content = file.read()
 
 # Regular expression to capture the credentials

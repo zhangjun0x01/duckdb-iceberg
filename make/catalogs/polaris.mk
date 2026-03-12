@@ -23,10 +23,10 @@ polaris_rebuild:
 
 polaris_stop:
 	@echo "Stopping Polaris server..."
-	@pkill -f "polaris-server:run" || true
-	@lsof -ti:8182 | xargs -r kill -9 || true
+	cd .catalogs/polaris && ./gradlew --stop
 
-polaris_start: polaris_clone polaris_build
+polaris_start: polaris_clone polaris_build polaris_stop
+	$(call stop_active_catalog)
 	@echo "Starting Polaris server..."
 	cd .catalogs/polaris && nohup ./gradlew :polaris-server:run > polaris-server.log 2> polaris-error.log &
 	@echo "Waiting for Polaris to initialize..."
@@ -45,7 +45,10 @@ polaris_start: polaris_clone polaris_build
 	cd .catalogs/polaris && python3 -m venv . && . bin/activate && make client-regenerate && cd client/python && python3 -m pip install . && cd ../../../../ && \
 	cd .catalogs/polaris && ../../scripts/polaris/quickstart_polaris_catalog.sh > user_credentials.json && cd ../../ && \
 	python3 scripts/polaris/get_polaris_client_creds.py && \
-	perl -i -pe "s/%PLACEHOLDER_POLARIS_CLIENT_ID%/$$(cat tmp/polaris_client_id.txt)/g; s/%PLACEHOLDER_POLARIS_CLIENT_SECRET%/$$(cat tmp/polaris_client_secret.txt)/g" test/configs/polaris.json
+	export POLARIS_CLIENT_ID=$$(cat tmp/polaris_client_id.txt); \
+	export POLARIS_CLIENT_SECRET=$$(cat tmp/polaris_client_secret.txt); \
+	envsubst '$$POLARIS_CLIENT_ID $$POLARIS_CLIENT_SECRET' < test/configs/polaris.json.template > test/configs/polaris.json
+	$(call set_active_catalog,polaris)
 
 polaris_data:
 	@echo "Setting up venv-spark4 and generating data..."
@@ -57,6 +60,4 @@ polaris_data:
 	export POLARIS_CLIENT_SECRET=$$(cat tmp/polaris_client_secret.txt) && \
 	python3 -m scripts.data_generators.generate_data polaris
 
-polaris_stop_start: polaris_stop polaris_start
-
-polaris: polaris_stop_start polaris_data
+polaris: polaris_start polaris_data
