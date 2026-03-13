@@ -13,6 +13,8 @@ require iceberg
 
 require httpfs
 
+require core_functions
+
 # Do not ignore 'HTTP' error messages!
 set ignore_error_messages
 
